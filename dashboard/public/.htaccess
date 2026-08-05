@@ -1,0 +1,30 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    SetEnvIf Request_URI "/storage/" IS_STORAGE_ASSET=1
+
+    Header always set Access-Control-Allow-Origin "*" env=IS_STORAGE_ASSET
+    Header always set Access-Control-Allow-Methods "GET, OPTIONS" env=IS_STORAGE_ASSET
+    Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization, Range" env=IS_STORAGE_ASSET
+    Header always set Access-Control-Expose-Headers "Content-Length, Content-Range, Accept-Ranges" env=IS_STORAGE_ASSET
+</IfModule>
