@@ -12,8 +12,8 @@
         <a class="nav-link text-light fw-semibold" aria-current="page" href="{{ route('kelola_siswa') }}">Kelola
             Data Siswa</a>
         <br>
-        <a class="nav-link text-light fw-semibold" aria-current="page" href="{{ route('fingerprint.index') }}">Kelola
-            Sidik Jari</a>
+        {{-- <a class="nav-link text-light fw-semibold" aria-current="page" href="{{ route('fingerprint.index') }}">Kelola
+            Sidik Jari</a> --}}
         <br>
         <a class="nav-link text-light fw-semibold" aria-current="page" href="{{ route('kelola_surat') }}">Kelola
             Surat Suara</a>

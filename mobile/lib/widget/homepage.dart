@@ -1,13 +1,12 @@
 import 'dart:async';
 
-// import 'package:evoting_pilketos/service/mqttservice.dart';
+import 'package:evoting_pilketos/service/mqttservice.dart';
 // import 'package:evoting_pilketos/service/reverb_service.dart';
 import 'package:evoting_pilketos/service/votepapperservice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:simple_flutter_reverb/simple_flutter_reverb.dart';
 // import 'package:simple_flutter_reverb/simple_flutter_reverb.dart';
-import 'package:simple_flutter_reverb/simple_flutter_reverb_options.dart';
+// import 'package:simple_flutter_reverb/simple_flutter_reverb_options.dart';
 
 class HomePage extends StatefulWidget {
   final Map data;
@@ -21,7 +20,7 @@ class _HomePageState extends State<HomePage> {
   final VotePaperService votePaperService = VotePaperService();
   TextEditingController verified = TextEditingController();
   final url = dotenv.env['API_URL'];
-  // final mqtt = MqttService();
+  final mqtt = MqttService();
   bool showFingerprint = false;
   late int idFp = 0;
   void showSuccessDialog(int noCandidate) {
@@ -254,7 +253,9 @@ class _HomePageState extends State<HomePage> {
                 onPressed: () async {
                   final result = await votePaperService.submitVote(
                     widget.data['data']['vote_id'],
-                    widget.data['data']['paslon_${noCandidate == 1 ? 'first' : noCandidate == 2 ? 'second' : 'third'}']['paslon_id'],
+                    widget.data['data'][
+                            'paslon_${noCandidate == 1 ? 'first' : noCandidate == 2 ? 'second' : 'third'}']
+                        ['paslon_id'],
                     idFp,
                   );
                   print(result);
@@ -278,59 +279,59 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // mqtt.connect();
-    // mqtt.onMessageReceived = (message) {
-    //   verified.text = message;
-    // };
-    connectReverb();
+    mqtt.connect();
+    mqtt.onMessageReceived = (message) {
+      verified.text = message;
+    };
+    // connectReverb();
   }
 
-  Future<void> connectReverb() async {
-    final options = SimpleFlutterReverbOptions(
-      scheme: dotenv.env['REVERB_SCHEME']!,
-      host: dotenv.env['DOMAIN']!,
-      port: dotenv.env['REVERB_PORT']!,
-      appKey: dotenv.env['REVERB_APP_KEY']!,
-      authUrl: "",
-      authToken: "",
-      privatePrefix: "private-",
-      usePrefix: dotenv.env['REVERB_IS_PRIVATE'] == 'true',
-    );
-    var reverbService = SimpleFlutterReverb(options: options);
-    listenMessages(reverbService);
-  }
+  // Future<void> connectReverb() async {
+  //   final options = SimpleFlutterReverbOptions(
+  //     scheme: dotenv.env['REVERB_SCHEME']!,
+  //     host: dotenv.env['DOMAIN']!,
+  //     port: dotenv.env['REVERB_PORT']!,
+  //     appKey: dotenv.env['REVERB_APP_KEY']!,
+  //     authUrl: "",
+  //     authToken: "",
+  //     privatePrefix: "private-",
+  //     usePrefix: dotenv.env['REVERB_IS_PRIVATE'] == 'true',
+  //   );
+  //   var reverbService = SimpleFlutterReverb(options: options);
+  //   listenMessages(reverbService);
+  // }
 
-  void listenMessages(SimpleFlutterReverb reverbService) {
-    reverbService.listen(
-      (message) {
-        print("🔥 EVENT MASUK");
-        print("  Event: ${message.event}");
-        print("  Data : ${message.data}");
+  // void listenMessages(SimpleFlutterReverb reverbService) {
+  //   reverbService.listen(
+  //     (message) {
+  //       print("🔥 EVENT MASUK");
+  //       print("  Event: ${message.event}");
+  //       print("  Data : ${message.data}");
 
-        if (message.event.contains("pusher_internal")) {
-          print("ℹ️ Internal event diterima, dilewati...");
-          return;
-        }
+  //       if (message.event.contains("pusher_internal")) {
+  //         print("ℹ️ Internal event diterima, dilewati...");
+  //         return;
+  //       }
 
-        if (message.data == null || message.data.isEmpty) {
-          print("⚠️ Tidak ada payload data dari backend");
-          return;
-        }
+  //       if (message.data == null || message.data.isEmpty) {
+  //         print("⚠️ Tidak ada payload data dari backend");
+  //         return;
+  //       }
 
-        if (message.data['data'] == null) {
-          print("⚠️ Format data tidak sesuai, payload:");
-          print(message.data);
-          return;
-        }
-        verified.text = message.data['data']['decision'];
-        setState(() {
-          idFp = message.data['data']['id_fp'];
-        });
-      },
-      "fp.${widget.data['data']['vote_id']}",
-      isPrivate: false,
-    );
-  }
+  //       if (message.data['data'] == null) {
+  //         print("⚠️ Format data tidak sesuai, payload:");
+  //         print(message.data);
+  //         return;
+  //       }
+  //       verified.text = message.data['data']['decision'];
+  //       setState(() {
+  //         idFp = message.data['data']['id_fp'];
+  //       });
+  //     },
+  //     "fp.${widget.data['data']['vote_id']}",
+  //     isPrivate: false,
+  //   );
+  // }
 
   @override
   void didChangeDependencies() {

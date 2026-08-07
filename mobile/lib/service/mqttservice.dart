@@ -3,8 +3,8 @@ import 'package:mqtt_client/mqtt_server_client.dart';
 
 class MqttService {
   late MqttServerClient client;
-  // final String broker = 'broker.hivemq.com';
-  final String broker = 'test.mosquitto.org';
+  final String broker = 'broker.hivemq.com';
+  // final String broker = 'test.mosquitto.org';
   final String topic = 'flutter/iot/data';
 
   final _messages = <String>[];
