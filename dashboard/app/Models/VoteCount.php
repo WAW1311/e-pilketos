@@ -12,6 +12,7 @@ class VoteCount extends Model
     protected $fillable = [
         'id',
         'vote_id',
+        'nis',
         'id_fp',
         'paslon_id',
     ];
@@ -19,6 +20,10 @@ class VoteCount extends Model
     public function paslon()
     {
         return $this->belongsTo(Paslon::class, 'paslon_id', 'paslon_id');
+    }
+    public function siswa()
+    {
+        return $this->belongsTo(SiswaModel::class, 'nis', 'nis');
     }
     public function votepapper()
     {

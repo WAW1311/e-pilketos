@@ -1,12 +1,9 @@
 import 'dart:async';
 
-import 'package:evoting_pilketos/service/mqttservice.dart';
-// import 'package:evoting_pilketos/service/reverb_service.dart';
 import 'package:evoting_pilketos/service/votepapperservice.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-// import 'package:simple_flutter_reverb/simple_flutter_reverb.dart';
-// import 'package:simple_flutter_reverb/simple_flutter_reverb_options.dart';
 
 class HomePage extends StatefulWidget {
   final Map data;
@@ -18,11 +15,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final VotePaperService votePaperService = VotePaperService();
-  TextEditingController verified = TextEditingController();
   final url = dotenv.env['API_URL'];
-  final mqtt = MqttService();
-  bool showFingerprint = false;
-  late int idFp = 0;
+  bool nisDialogShown = false;
+  String? verifiedNis;
+
   void showSuccessDialog(int noCandidate) {
     int countdown = 5;
     late StateSetter dialogSetState;
@@ -150,86 +146,149 @@ class _HomePageState extends State<HomePage> {
     return confirmed;
   }
 
-  void showFingerprintDialog() {
-    Timer? verificationTimer;
-    bool isVerified = false;
+  /// Validasi format NIS di sisi klien sebelum memanggil API.
+  /// Mengembalikan pesan error, atau null jika valid.
+  String? _validateNis(String nis) {
+    if (nis.isEmpty) {
+      return 'NIS tidak boleh kosong';
+    }
+    if (!RegExp(r'^\d+$').hasMatch(nis)) {
+      return 'NIS hanya boleh berisi angka';
+    }
+    if (nis.length < 4 || nis.length > 20) {
+      return 'Panjang NIS tidak valid';
+    }
+    return null;
+  }
+
+  void showNisDialog() {
+    final TextEditingController nisController = TextEditingController();
+    bool isLoading = false;
+    String? errorText;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            verificationTimer ??=
-                Timer.periodic(Duration(milliseconds: 500), (timer) {
-              if (verified.text == 'matched') {
-                timer.cancel();
-                verificationTimer = null;
+            Future<void> verify() async {
+              final nis = nisController.text.trim();
+              final validationError = _validateNis(nis);
+              if (validationError != null) {
+                setState(() => errorText = validationError);
+                return;
+              }
 
-                if (context.mounted) {
-                  setState(() {
-                    isVerified = true;
-                  });
+              setState(() {
+                isLoading = true;
+                errorText = null;
+              });
 
-                  Future.delayed(Duration(seconds: 2), () {
-                    if (context.mounted) Navigator.pop(context);
-                  });
-                }
-              } else {}
-            });
+              final res = await votePaperService.verifyNis(
+                widget.data['data']['vote_id'],
+                nis,
+              );
+
+              if (!context.mounted) return;
+
+              if (res['status'] == true && res['decision'] == 'matched') {
+                verifiedNis = nis;
+                Navigator.pop(context);
+              } else {
+                setState(() {
+                  isLoading = false;
+                  errorText = res['message'] ?? 'Verifikasi gagal';
+                });
+              }
+            }
 
             return AlertDialog(
               title: Center(
                   child: Text(
-                'Verifikasi Sidik Jari',
-                style: TextStyle(fontSize: 15),
+                'Verifikasi Pemilih',
+                style: TextStyle(fontSize: 16),
               )),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!isVerified) ...[
-                    // CircularProgressIndicator(),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Icon(
-                      Icons.fingerprint_outlined,
-                      size: 80,
+                      Icons.badge_outlined,
+                      size: 72,
                       color: Colors.blue,
                     ),
                     SizedBox(height: 12),
-                    Text('Menunggu verifikasi sidik jari...'),
+                    Text(
+                      'Masukkan NIS untuk memverifikasi identitas Anda',
+                      textAlign: TextAlign.center,
+                    ),
                     SizedBox(height: 12),
+                    TextField(
+                      controller: nisController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      enabled: !isLoading,
+                      decoration: InputDecoration(
+                        labelText: 'NIS',
+                        border: OutlineInputBorder(),
+                        errorText: errorText,
+                      ),
+                      onSubmitted: (_) => verify(),
+                    ),
+                    SizedBox(height: 12),
+                    if (isLoading) CircularProgressIndicator(),
+                  ],
+                ),
+              ),
+              actions: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                       ),
-                      onPressed: () async {
-                        bool confirmed = await showCodeConfirmationDialog();
-                        if (confirmed) {
-                          Navigator.pushReplacementNamed(context, '/code');
-                        } else {
-                          Navigator.pop(context);
-                          showFingerprintDialog();
-                        }
-                      },
-                      child:
-                          Text('Keluar', style: TextStyle(color: Colors.white)),
-                    )
-                  ] else ...[
-                    Icon(Icons.check_circle, color: Colors.green, size: 48),
-                    SizedBox(height: 12),
-                    Text('Berhasil verifikasi!',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              bool confirmed =
+                                  await showCodeConfirmationDialog();
+                              if (!context.mounted) return;
+                              if (confirmed) {
+                                Navigator.pop(context);
+                                Navigator.pushReplacementNamed(context, '/code');
+                              }
+                            },
+                      child: Text('Keluar',
+                          style: TextStyle(color: Colors.white)),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                      ),
+                      onPressed: isLoading ? null : verify,
+                      child: Text('Verifikasi',
+                          style: TextStyle(color: Colors.white)),
+                    ),
                   ],
-                ],
-              ),
+                ),
+              ],
             );
           },
         );
       },
-    ).then((_) {
-      verificationTimer?.cancel();
-    });
+    );
   }
 
   Future<void> showConfirmationDialog(BuildContext context, noCandidate) async {
+    if (verifiedNis == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Verifikasi NIS terlebih dahulu')),
+      );
+      showNisDialog();
+      return;
+    }
     await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -256,12 +315,14 @@ class _HomePageState extends State<HomePage> {
                     widget.data['data'][
                             'paslon_${noCandidate == 1 ? 'first' : noCandidate == 2 ? 'second' : 'third'}']
                         ['paslon_id'],
-                    idFp,
+                    verifiedNis,
                   );
                   print(result);
+                  if (!context.mounted) return;
                   if (result) {
                     showSuccessDialog(noCandidate);
                   } else {
+                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Gagal mengirim suara')),
                     );
@@ -277,69 +338,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    mqtt.connect();
-    mqtt.onMessageReceived = (message) {
-      verified.text = message;
-    };
-    // connectReverb();
-  }
-
-  // Future<void> connectReverb() async {
-  //   final options = SimpleFlutterReverbOptions(
-  //     scheme: dotenv.env['REVERB_SCHEME']!,
-  //     host: dotenv.env['DOMAIN']!,
-  //     port: dotenv.env['REVERB_PORT']!,
-  //     appKey: dotenv.env['REVERB_APP_KEY']!,
-  //     authUrl: "",
-  //     authToken: "",
-  //     privatePrefix: "private-",
-  //     usePrefix: dotenv.env['REVERB_IS_PRIVATE'] == 'true',
-  //   );
-  //   var reverbService = SimpleFlutterReverb(options: options);
-  //   listenMessages(reverbService);
-  // }
-
-  // void listenMessages(SimpleFlutterReverb reverbService) {
-  //   reverbService.listen(
-  //     (message) {
-  //       print("🔥 EVENT MASUK");
-  //       print("  Event: ${message.event}");
-  //       print("  Data : ${message.data}");
-
-  //       if (message.event.contains("pusher_internal")) {
-  //         print("ℹ️ Internal event diterima, dilewati...");
-  //         return;
-  //       }
-
-  //       if (message.data == null || message.data.isEmpty) {
-  //         print("⚠️ Tidak ada payload data dari backend");
-  //         return;
-  //       }
-
-  //       if (message.data['data'] == null) {
-  //         print("⚠️ Format data tidak sesuai, payload:");
-  //         print(message.data);
-  //         return;
-  //       }
-  //       verified.text = message.data['data']['decision'];
-  //       setState(() {
-  //         idFp = message.data['data']['id_fp'];
-  //       });
-  //     },
-  //     "fp.${widget.data['data']['vote_id']}",
-  //     isPrivate: false,
-  //   );
-  // }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!showFingerprint) {
-      showFingerprint = true;
+    if (!nisDialogShown) {
+      nisDialogShown = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showFingerprintDialog();
+        showNisDialog();
       });
     }
   }
@@ -347,9 +351,13 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 700),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -413,23 +421,27 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 10),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      InkWell(
-                        onTap: () {
-                          showConfirmationDialog(context, 1);
-                        },
-                        child: kandidatBox(
-                          no: '1',
-                          imagePath:
-                              "${url!}${widget.data['assets']['paslon1']}",
-                          nama1:
-                              '${widget.data['data']['paslon_first']['ketua']['nama']}',
-                          nama2:
-                              '${widget.data['data']['paslon_first']['wakil']['nama']}',
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            showConfirmationDialog(context, 1);
+                          },
+                          child: kandidatBox(
+                            no: '1',
+                            imagePath:
+                                "${url!}${widget.data['assets']['paslon1']}",
+                            nama1:
+                                '${widget.data['data']['paslon_first']['ketua']['nama']}',
+                            nama2:
+                                '${widget.data['data']['paslon_first']['wakil']['nama']}',
+                          ),
                         ),
                       ),
-                      InkWell(
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: InkWell(
                           onTap: () {
                             showConfirmationDialog(context, 2);
                           },
@@ -441,19 +453,24 @@ class _HomePageState extends State<HomePage> {
                                 '${widget.data['data']['paslon_second']['ketua']['nama']}',
                             nama2:
                                 '${widget.data['data']['paslon_second']['wakil']['nama']}',
-                          )),
-                      InkWell(
-                        onTap: () {
-                          showConfirmationDialog(context, 3);
-                        },
-                        child: kandidatBox(
-                          no: '3',
-                          imagePath:
-                              "${url!}${widget.data['assets']['paslon3']}",
-                          nama1:
-                              '${widget.data['data']['paslon_third']['ketua']['nama']}',
-                          nama2:
-                              '${widget.data['data']['paslon_third']['wakil']['nama']}',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            showConfirmationDialog(context, 3);
+                          },
+                          child: kandidatBox(
+                            no: '3',
+                            imagePath:
+                                "${url!}${widget.data['assets']['paslon3']}",
+                            nama1:
+                                '${widget.data['data']['paslon_third']['ketua']['nama']}',
+                            nama2:
+                                '${widget.data['data']['paslon_third']['wakil']['nama']}',
+                          ),
                         ),
                       ),
                     ],
@@ -461,8 +478,10 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            const SizedBox(height: 40),
-          ],
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -474,10 +493,15 @@ class _HomePageState extends State<HomePage> {
     required String nama1,
     required String nama2,
   }) {
-    print(imagePath);
+    final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
+    final boxHeight = isTablet ? 320.0 : 242.0;
+    final imageHeight = isTablet ? 150.0 : 100.0;
+    final headerHeight = isTablet ? 40.0 : 30.0;
+    final noSize = isTablet ? 24.0 : 18.0;
+    final nameSize = isTablet ? 14.0 : 10.0;
+
     return Container(
-      width: MediaQuery.of(context).size.width / 3 - 24,
-      height: 242,
+      height: boxHeight,
       margin: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         border: Border.all(
@@ -490,16 +514,18 @@ class _HomePageState extends State<HomePage> {
         children: [
           Container(
             color: Colors.white,
-            height: 30,
+            height: headerHeight,
             width: double.infinity,
             alignment: Alignment.center,
             child: Text(
               no,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style:
+                  TextStyle(fontSize: noSize, fontWeight: FontWeight.bold),
             ),
           ),
           Container(
-            height: 100,
+            height: imageHeight,
+            width: double.infinity,
             decoration: BoxDecoration(
               border: Border(
                 top: BorderSide(color: Colors.black, width: 2),
@@ -516,24 +542,27 @@ class _HomePageState extends State<HomePage> {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(4),
-            child: Column(
-              children: [
-                Text(
-                  '$nama1 (ketua)',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$nama2 (wakil)',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-              ],
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '$nama1 (ketua)',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: nameSize, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$nama2 (wakil)',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: nameSize, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
             ),
           )
         ],

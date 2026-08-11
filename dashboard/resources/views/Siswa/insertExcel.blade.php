@@ -3,7 +3,7 @@
 <div class="py-3">
     <h2 class="text-center">Import Data Siswa</h2>
     <center>
-        <form class="w-25 border p-3" action="{{ route('tambah_siswa_POST',['excel' => 'true']) }}" method="POST" enctype="multipart/form-data">
+        <form class="border p-3 w-100" style="max-width: 420px;" action="{{ route('tambah_siswa_POST',['excel' => 'true']) }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="mb-3">
                 <label for="file" class="form-label">File Excel</label>

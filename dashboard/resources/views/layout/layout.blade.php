@@ -17,7 +17,7 @@
     @yield('body')
     <script src="{{ asset('assets/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="{{ asset('assets/DataTables/dataTables.min.js')}}"></script>
+    <script src="{{ asset('assets/DataTables/dataTables.min.js') }}"></script>
     {{-- <script src="https://cdn.datatables.net/2.3.0/js/dataTables.bootstrap5.min.js"></script> --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
@@ -62,9 +62,11 @@
             });
         </script>
     @endif
-    <footer>
-        @include('components.footer')
-    </footer>
+    <div style="bottom: 0; width: 100%; z-index: 9999;">
+        <footer>
+            @include('components.footer')
+        </footer>
+    </div>
 </body>
 
 </html>

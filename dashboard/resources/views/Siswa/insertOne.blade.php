@@ -2,7 +2,7 @@
 @section('content')
 <div class="py-3">
     <h2 class="text-center">Tambah Data Siswa</h2>
-    <center><form class="w-25 border p-3" action="{{ route('tambah_siswa_POST',['excel' => 'false']) }}" method="POST">
+    <center><form class="border p-3 w-100" style="max-width: 420px;" action="{{ route('tambah_siswa_POST',['excel' => 'false']) }}" method="POST">
         @csrf
         <div class="mb-3">
             <label for="nis" class="form-label">NIS</label>

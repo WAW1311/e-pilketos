@@ -13,6 +13,7 @@ use InvalidArgumentException;
 use App\Models\FingerprintModel;
 use App\Events\MatchingFingerprint;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Phpml\Math\Distance\Manhattan;
 
@@ -61,31 +62,159 @@ class Restcontroller extends Controller
         ], 200);
     }
 
+    /**
+     * Verifikasi kelayakan pemilih berdasarkan NIS.
+     *
+     * Urutan cek: NIS terdaftar -> bukan kandidat pada votepapper ini ->
+     * belum pernah memilih pada votepapper ini.
+     */
+    public function VerifyNis(Request $request)
+    {
+        $validated = $request->validate([
+            'vote_id' => 'required|string',
+            'nis' => 'required|string',
+        ]);
+
+        $votePapper = VotePapper::where('vote_id', $validated['vote_id'])->first();
+        if (!$votePapper) {
+            return response()->json([
+                'message' => 'Surat suara tidak ditemukan',
+                'decision' => 'invalid_vote',
+            ], 404);
+        }
+
+        $result = $this->evaluateVoter($votePapper, $validated['nis']);
+
+        return response()->json([
+            'message' => $result['message'],
+            'decision' => $result['decision'],
+            'data' => $result['decision'] === 'matched'
+                ? ['nis' => $validated['nis'], 'nama' => $result['nama']]
+                : null,
+        ], $result['status']);
+    }
+
     public function SubmitVote(Request $request)
     {
-        $vote_id = $request->query('vote_id');
-        $paslon_id = $request->query('paslon_id');
-        $id_fp = $request->query('id_fp');
+        $validated = $request->validate([
+            'vote_id' => 'required|string',
+            'nis' => 'required|string',
+            'paslon_id' => 'required|string',
+        ]);
+
         try {
-            $data = $this->votecount->create([
-                'vote_id' => $vote_id,
-                'id_fp' => $id_fp,
-                'paslon_id' => $paslon_id
-            ]);
+            $data = DB::transaction(function () use ($validated) {
+                // Kunci baris votepapper agar cek kelayakan & insert bersifat atomik.
+                $votePapper = VotePapper::where('vote_id', $validated['vote_id'])
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                // Validasi ulang di server — jangan percaya klien.
+                $eligibility = $this->evaluateVoter($votePapper, $validated['nis']);
+                if ($eligibility['decision'] !== 'matched') {
+                    throw new \DomainException($eligibility['message']);
+                }
+
+                // Pastikan paslon yang dipilih benar-benar milik votepapper ini.
+                $validPaslonIds = [$votePapper->paslon1, $votePapper->paslon2, $votePapper->paslon3];
+                if (!in_array($validated['paslon_id'], $validPaslonIds, true)) {
+                    throw new \DomainException('Kandidat tidak valid untuk surat suara ini');
+                }
+
+                return $this->votecount->create([
+                    'vote_id' => $validated['vote_id'],
+                    'nis' => $validated['nis'],
+                    'paslon_id' => $validated['paslon_id'],
+                ]);
+            });
+
             broadcast(new VoteCounts($data));
+
             return response()->json([
                 'message' => 'Vote successfully recorded',
                 'data' => [
-                    'vote_id' => $vote_id,
-                    'paslon_id' => $paslon_id
+                    'vote_id' => $data->vote_id,
+                    'paslon_id' => $data->paslon_id,
                 ]
             ], 200);
+        } catch (\DomainException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to record vote',
                 'error' => $e->getMessage()
             ], 400);
         }
+    }
+
+    /**
+     * Evaluasi kelayakan seorang NIS terhadap sebuah votepapper.
+     *
+     * @return array{decision:string,message:string,status:int,nama:?string}
+     */
+    private function evaluateVoter(VotePapper $votePapper, string $nis): array
+    {
+        $siswa = SiswaModel::where('nis', $nis)->first();
+        if (!$siswa) {
+            return [
+                'decision' => 'not_found',
+                'message' => 'NIS tidak terdaftar',
+                'status' => 404,
+                'nama' => null,
+            ];
+        }
+
+        if (in_array($nis, $this->candidateNisForVote($votePapper), true)) {
+            return [
+                'decision' => 'is_candidate',
+                'message' => 'Kandidat tidak diperbolehkan memilih',
+                'status' => 403,
+                'nama' => $siswa->nama,
+            ];
+        }
+
+        $alreadyVoted = VoteCount::where('vote_id', $votePapper->vote_id)
+            ->where('nis', $nis)
+            ->exists();
+        if ($alreadyVoted) {
+            return [
+                'decision' => 'already_voted',
+                'message' => 'NIS sudah pernah memilih pada surat suara ini',
+                'status' => 409,
+                'nama' => $siswa->nama,
+            ];
+        }
+
+        return [
+            'decision' => 'matched',
+            'message' => 'Verifikasi berhasil',
+            'status' => 200,
+            'nama' => $siswa->nama,
+        ];
+    }
+
+    /**
+     * Daftar NIS ketua & wakil dari seluruh paslon pada votepapper ini.
+     *
+     * @return array<int,string>
+     */
+    private function candidateNisForVote(VotePapper $votePapper): array
+    {
+        $paslonIds = array_filter([
+            $votePapper->paslon1,
+            $votePapper->paslon2,
+            $votePapper->paslon3,
+        ]);
+
+        return Paslon::whereIn('paslon_id', $paslonIds)
+            ->get(['ketua', 'wakil'])
+            ->flatMap(fn ($p) => [$p->ketua, $p->wakil])
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public function FpReceive(Request $request)

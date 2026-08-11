@@ -54,6 +54,7 @@ class _VotingCodeState extends State<VotingCode> {
         ),
         child: Center(
           child: Container(
+            constraints: const BoxConstraints(maxWidth: 480),
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.symmetric(horizontal: 20),
             decoration: BoxDecoration(

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('id_siswa');
             $table->string('vote_id');
             $table->text('template');
-            $table->foreign('id_siswa')->references('nis')->on('siswa_models')->onDelete('cascade');
+            $table->foreign('id_siswa', 'fingerprint_models_siswa_foreign')->references('nis')->on('siswa_models')->onDelete('cascade');
             $table->foreign('vote_id')->references('vote_id')->on('vote_pappers')->onDelete('cascade');
             $table->timestamps();
         });

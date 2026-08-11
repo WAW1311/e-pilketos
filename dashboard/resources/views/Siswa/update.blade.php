@@ -2,7 +2,7 @@
 @section('content')
 <div>
     <h2 class="text-center">Ubah Data Siswa</h2>
-    <center><form class="w-25 border p-3" action="{{ route('update_siswa_POST') }}" method="POST">
+    <center><form class="border p-3 w-100" style="max-width: 420px;" action="{{ route('update_siswa_POST') }}" method="POST">
         @csrf
         <div class="mb-3">
             <label for="nis" class="form-label">NIS</label>

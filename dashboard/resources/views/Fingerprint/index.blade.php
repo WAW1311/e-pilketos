@@ -7,8 +7,8 @@
                 <a href="{{ route('fingerprint.create') }}" class="fw-semibold btn btn-primary mb-3">Tambah Data</a>
             </div>
         </div>
-        <div>
-            <table id="myTable" class="table table-responsive">
+        <div class="table-responsive">
+            <table id="myTable" class="table align-middle" style="min-width: 640px;">
                 <thead>
                     <tr>
                         <th scope="col">No</th>

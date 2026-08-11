@@ -19,8 +19,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/votepapper', [Restcontroller::class, 'Votepapper']);
-Route::post('/voting', [Restcontroller::class, 'SubmitVote']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/votepapper', [Restcontroller::class, 'Votepapper']);
+    Route::post('/verify', [Restcontroller::class, 'VerifyNis']);
+    Route::post('/voting', [Restcontroller::class, 'SubmitVote']);
+});
 
 Route::get('/foo', function () {
     $target = realpath('dashboard/storage/app/public');

@@ -1,24 +1,30 @@
 @extends('layout.app')
 @section('content')
     <div class="p-3">
-        <div class="d-flex justify-content-evenly mb-5">
-            <div class="card bg-primary">
-                <div class="card-body text-light fw-bold">
-                    <h5 class="card-title">Jumlah Siswa : <span>{{ $siswa ?: '0' }}</span></h5>
+        <div class="row g-3 mb-5 justify-content-center">
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card bg-primary h-100">
+                    <div class="card-body text-light fw-bold">
+                        <h5 class="card-title mb-0">Jumlah Siswa : <span>{{ $siswa ?: '0' }}</span></h5>
+                    </div>
                 </div>
             </div>
-            <div class="card bg-info">
-                <div class="card-body text-light-emphasis fw-bold">
-                    <h5 class="card-title">Jumlah Surat Suara : <span>{{ $suratSuara ?: '0' }}</span></h5>
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card bg-info h-100">
+                    <div class="card-body text-light-emphasis fw-bold">
+                        <h5 class="card-title mb-0">Jumlah Surat Suara : <span>{{ $suratSuara ?: '0' }}</span></h5>
+                    </div>
                 </div>
             </div>
-            <div class="card bg-warning">
-                <div class="card-body text-light-emphasis fw-bold">
-                    <h5 class="card-title">Jumlah Paslon : <span>{{ $paslon ?: '0' }}</span></h5>
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card bg-warning h-100">
+                    <div class="card-body text-light-emphasis fw-bold">
+                        <h5 class="card-title mb-0">Jumlah Paslon : <span>{{ $paslon ?: '0' }}</span></h5>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="container-fluid w-75">
+        <div class="container-fluid px-0" style="max-width: 900px;">
             <div>
                 <canvas id="myChart"></canvas>
             </div>

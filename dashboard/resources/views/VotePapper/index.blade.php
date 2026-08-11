@@ -2,8 +2,9 @@
 @section('content')
     <div class="p-3">
         <a class="btn btn-primary m-3 ms-0 fw-semibold" href="{{ route('tambah_surat_GET') }}">Tambah Surat Suara</a>
-        <table id="myTable" class="table table-responsive">
-            <thead>
+        <div class="table-responsive">
+            <table id="myTable" class="table align-middle" style="min-width: 1100px;">
+                <thead>
                 <tr>
                     <th rowspan="2">No</th>
                     <th rowspan="2">Id Voting</th>
@@ -55,5 +56,6 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
     </div>
 @endsection

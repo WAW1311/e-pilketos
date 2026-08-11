@@ -8,8 +8,8 @@
             <a href="{{ route('tambah_siswa_GET',['excel' => 'true']) }}" class="fw-semibold btn btn-success mb-3 ms-2">Import Dari Excel</a>
         </div>
     </div>
-    <div>
-        <table id="myTable" class="table table-responsive">
+    <div class="table-responsive">
+        <table id="myTable" class="table align-middle" style="min-width: 640px;">
             <thead>
               <tr>
                 <th scope="col">No</th>

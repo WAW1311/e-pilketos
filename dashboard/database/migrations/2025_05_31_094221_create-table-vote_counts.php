@@ -15,10 +15,12 @@ return new class extends Migration
             $table->id();
             $table->string('vote_id');
             $table->string('paslon_id');
-            $table->bigInteger('id_fp');
+            $table->bigInteger('id_fp')->nullable();
             $table->foreign('vote_id')->references('vote_id')->on('vote_pappers')->onDelete('cascade');
             $table->foreign('paslon_id')->references('paslon_id')->on('paslons')->onDelete('cascade');
-            $table->foreign('id_fp')->references('id')->on('fingerprint_models')->onDelete('cascade');
+            // id_fp sengaja tanpa foreign key: tabel fingerprint_models baru dibuat
+            // setelah migrasi ini, dan sesuai dump database kolom ini tidak ber-FK.
+            // Kolom nis + unique(vote_id, nis) ditambahkan pada migrasi alter berikutnya.
             $table->timestamps();
         });
     }
