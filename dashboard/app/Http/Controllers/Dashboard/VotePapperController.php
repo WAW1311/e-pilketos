@@ -95,25 +95,32 @@ class VotePapperController extends Controller
             'paslonSecond',
             'paslonThird',
         )->find($request->query('id'))->toArray();
-        // for ($index = 1; $index <= 3; $index++) {
-        //     $file = $request->file("foto$index");
-        //     $filename = null;
-        //     if ($file) {
-        //         Storage::delete('public/' . $dataVotePapper["paslon$index"]['asset']);
-        //         $uuid = Str::uuid()->toString();
-        //         $ext = $file->getClientOriginalExtension();
-        //         $filename = $uuid . '.' . $ext;
-        //         $file->storeAs('public', $filename);
-        //     } else {
-        //         $filename = $dataVotePapper["paslon$index"]['asset'];
-        //     }
-        //     $this->paslon->where('paslon_id', $dataVotePapper["paslon$index"])->update([
-        //         'ketua' => $request->get("ketua$index"),
-        //         'wakil' => $request->get("wakil$index"),
-        //         'asset' => $filename,
-        //         'nomor' => $dataVotePapper["paslon$index"]['nomor'],
-        //     ]);
-        // }
+        // dd($dataVotePapper);
+        $DateNow = now()->format('Y-m-d H:i:s');
+        if ($dataVotePapper['dimulai'] <= $DateNow) {
+            return redirect()->route('kelola_surat')->with('error', 'Tidak dapat mengubah data, Voting sudah dimulai!');
+        }
+        $key = ['first', 'second', 'third'];
+        for ($index = 0; $index <= 2; $index++) {
+            $paslon_index = $key[$index];
+            $file = $request->file("foto_$paslon_index");
+            $filename = null;
+            if ($file) {
+                Storage::delete('public/' . $dataVotePapper["paslon_$paslon_index"]['asset']);
+                $uuid = Str::uuid()->toString();
+                $ext = $file->getClientOriginalExtension();
+                $filename = $uuid . '.' . $ext;
+                $file->storeAs('public', $filename);
+            } else {
+                $filename = $dataVotePapper["paslon_$paslon_index"]['asset'];
+            }
+            $this->paslon->where('paslon_id', $dataVotePapper["paslon_$paslon_index"]['paslon_id'])->update([
+                'ketua' => $request->get("ketua_$paslon_index"),
+                'wakil' => $request->get("wakil_$paslon_index"),
+                'asset' => $filename,
+                'nomor' => $dataVotePapper["paslon_$paslon_index"]['nomor'],
+            ]);
+        }
         $this->votePapper->where('vote_id', $request->query('id'))->update([
             'periode' => $request->get('periode'),
             'dimulai' => $request->get('dimulai'),

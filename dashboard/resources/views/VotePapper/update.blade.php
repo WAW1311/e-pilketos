@@ -15,7 +15,7 @@
                     <div class="card p-3 h-100">
                         <h4 class="text-center">Paslon 1</h4>
                         <label for="name" class="form-label">Ketua</label>
-                        <select class="form-control" id="ketua1" name="ketua1" required>
+                        <select class="form-control" id="ketua1" name="ketua_first" required>
                             <option disabled>Pilih Ketua</option>
                             @foreach ($datasiswa as $siswa)
                                 <option {{ $datavote->paslon_first->ketua->nis == $siswa->nis ? 'selected' : '' }} value="{{ $siswa->nis }}">{{ $siswa->nis }} -- {{ $siswa->nama }}</option>
@@ -23,7 +23,7 @@
                         </select>
                         <br>
                         <label for="name" class="form-label">Wakil</label>
-                        <select class="form-control" id="wakil1" name="wakil1" required>
+                        <select class="form-control" id="wakil1" name="wakil_first" required>
                             <option disabled>Pilih Wakil</option>
                             @foreach ($datasiswa as $siswa)
                                 <option {{ $datavote->paslon_first->wakil->nis == $siswa->nis ? 'selected' : '' }} value="{{ $siswa->nis }}">{{ $siswa->nis }} -- {{ $siswa->nama }}</option>
@@ -31,14 +31,14 @@
                         </select>
                         <br>
                         <label for="foto1" class="form-label">Foto</label>
-                        <input class="form-control" type="file" name="foto1" id="foto1">
+                        <input class="form-control" type="file" name="foto_first" id="foto1">
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-xl-4">
                     <div class="card p-3 h-100">
                         <h4 class="text-center">Paslon 2</h4>
                         <label for="name" class="form-label">Ketua</label>
-                        <select class="form-control" id="ketua2" name="ketua2" required>
+                        <select class="form-control" id="ketua2" name="ketua_second" required>
                             <option disabled>Pilih Ketua</option>
                             @foreach ($datasiswa as $siswa)
                                 <option {{ $datavote->paslon_second->ketua->nis == $siswa->nis ? 'selected' : '' }} value="{{ $siswa->nis }}">{{ $siswa->nis }} -- {{ $siswa->nama }}</option>
@@ -46,7 +46,7 @@
                         </select>
                         <br>
                         <label for="name" class="form-label">Wakil</label>
-                        <select class="form-control" id="wakil2" name="wakil2" required>
+                        <select class="form-control" id="wakil2" name="wakil_second" required>
                             <option disabled>Pilih Wakil</option>
                             @foreach ($datasiswa as $siswa)
                                 <option {{ $datavote->paslon_second->wakil->nis == $siswa->nis ? 'selected' : '' }} value="{{ $siswa->nis }}">{{ $siswa->nis }} -- {{ $siswa->nama }}</option>
@@ -54,14 +54,14 @@
                         </select>
                         <br>
                         <label for="foto2" class="form-label">Foto</label>
-                        <input class="form-control" type="file" name="foto2" id="foto2">
+                        <input class="form-control" type="file" name="foto_second" id="foto2">
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-xl-4">
                     <div class="card p-3 h-100">
                         <h4 class="text-center">Paslon 3</h4>
                         <label for="name" class="form-label">Ketua</label>
-                        <select class="form-control" id="ketua3" name="ketua3" required>
+                        <select class="form-control" id="ketua3" name="ketua_third" required>
                             <option disabled>Pilih Ketua</option>
                             @foreach ($datasiswa as $siswa)
                                 <option {{ $datavote->paslon_third->ketua->nis == $siswa->nis ? 'selected' : '' }} value="{{ $siswa->nis }}">{{ $siswa->nis }} -- {{ $siswa->nama }}</option>
@@ -69,7 +69,7 @@
                         </select>
                         <br>
                         <label for="name" class="form-label">Wakil</label>
-                        <select class="form-control" id="wakil3" name="wakil3" required>
+                        <select class="form-control" id="wakil3" name="wakil_third" required>
                             <option disabled>Pilih Wakil</option>
                             @foreach ($datasiswa as $siswa)
                                 <option {{ $datavote->paslon_third->wakil->nis == $siswa->nis ? 'selected' : '' }} value="{{ $siswa->nis }}">{{ $siswa->nis }} -- {{ $siswa->nama }}</option>
@@ -77,7 +77,7 @@
                         </select>
                         <br>
                         <label for="foto3" class="form-label">Foto</label>
-                        <input class="form-control" type="file" name="foto3" id="foto3">
+                        <input class="form-control" type="file" name="foto_third" id="foto3">
                     </div>
                 </div>
             </div>

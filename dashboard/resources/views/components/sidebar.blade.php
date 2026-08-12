@@ -19,6 +19,7 @@
                 <a class="nav-link text-light fw-semibold" href="{{ route('kelola_siswa') }}">Kelola Data Siswa</a>
                 {{-- <a class="nav-link text-light fw-semibold" href="{{ route('fingerprint.index') }}">Kelola Sidik Jari</a> --}}
                 <a class="nav-link text-light fw-semibold" href="{{ route('kelola_surat') }}">Kelola Surat Suara</a>
+                <a class="nav-link text-light fw-semibold" href="{{ route('berita_acara') }}">Berita Acara</a>
             </nav>
         </div>
     </div>

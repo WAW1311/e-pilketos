@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+enum VotingSessionStatus { waiting, active, ended, unavailable }
+
 class HomePage extends StatefulWidget {
   final Map data;
   const HomePage({super.key, required this.data});
@@ -18,6 +20,222 @@ class _HomePageState extends State<HomePage> {
   final url = dotenv.env['API_URL'];
   bool nisDialogShown = false;
   String? verifiedNis;
+  late final DateTime? _startsAt;
+  late final DateTime? _endsAt;
+  late DateTime _now;
+  Timer? _sessionTimer;
+  late final ValueNotifier<DateTime> _sessionTick;
+  bool _sessionDialogVisible = false;
+  bool _isLeavingToVotingCode = false;
+  Future<void>? _sessionDialogFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _startsAt = _parseScheduleTime(widget.data['data']['dimulai']);
+    _endsAt = _parseScheduleTime(widget.data['data']['berakhir']);
+    _now = DateTime.now();
+    _sessionTick = ValueNotifier<DateTime>(_now);
+    _sessionTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final wasActive = _sessionStatus == VotingSessionStatus.active;
+      final now = DateTime.now();
+      setState(() => _now = now);
+      _sessionTick.value = now;
+
+      if (_sessionStatus == VotingSessionStatus.active) {
+        if (!wasActive) {
+          _dismissSessionDialog().then((_) {
+            if (mounted) _showNisDialogIfNeeded();
+          });
+        }
+      } else {
+        _showSessionDialog();
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_sessionStatus == VotingSessionStatus.active) {
+        _showNisDialogIfNeeded();
+      } else {
+        _showSessionDialog();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _sessionTimer?.cancel();
+    _sessionTick.dispose();
+    super.dispose();
+  }
+
+  DateTime? _parseScheduleTime(dynamic value) {
+    if (value is! String || value.trim().isEmpty) return null;
+    return DateTime.tryParse(value)?.toLocal();
+  }
+
+  VotingSessionStatus get _sessionStatus {
+    final startsAt = _startsAt;
+    final endsAt = _endsAt;
+    if (startsAt == null || endsAt == null || !endsAt.isAfter(startsAt)) {
+      return VotingSessionStatus.unavailable;
+    }
+    if (_now.isBefore(startsAt)) return VotingSessionStatus.waiting;
+    if (!_now.isBefore(endsAt)) return VotingSessionStatus.ended;
+    return VotingSessionStatus.active;
+  }
+
+  bool get _isVotingActive => _sessionStatus == VotingSessionStatus.active;
+
+  String _formatCountdown(Duration duration) {
+    final totalSeconds = duration.isNegative ? 0 : duration.inSeconds;
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  String _formatScheduleTime(DateTime time) {
+    return '${time.day.toString().padLeft(2, '0')}/${time.month.toString().padLeft(2, '0')}/${time.year} '
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  String get _remainingTime {
+    switch (_sessionStatus) {
+      case VotingSessionStatus.waiting:
+        return _formatCountdown(_startsAt!.difference(_now));
+      case VotingSessionStatus.active:
+        return _formatCountdown(_endsAt!.difference(_now));
+      case VotingSessionStatus.ended:
+      case VotingSessionStatus.unavailable:
+        return '00:00:00';
+    }
+  }
+
+  void _showNisDialogIfNeeded() {
+    if (!nisDialogShown && mounted && _isVotingActive) {
+      nisDialogShown = true;
+      showNisDialog();
+    }
+  }
+
+  Future<void> _dismissSessionDialog() async {
+    if (!_sessionDialogVisible || !mounted) return;
+
+    Navigator.of(context, rootNavigator: true).pop();
+    await _sessionDialogFuture;
+  }
+
+  void _returnToVotingCode() {
+    if (_isLeavingToVotingCode || !mounted) return;
+
+    // Hentikan timer & tandai sedang keluar agar tidak ada dialog sesi
+    // (mis. "Voting Telah Berakhir") yang muncul di halaman kode voting.
+    _isLeavingToVotingCode = true;
+    _sessionTimer?.cancel();
+    Navigator.of(context, rootNavigator: true)
+        .pushNamedAndRemoveUntil('/code', (route) => false);
+  }
+
+  void _showSessionDialog() {
+    if (!mounted ||
+        _isVotingActive ||
+        _sessionDialogVisible ||
+        _isLeavingToVotingCode) {
+      return;
+    }
+
+    _sessionDialogVisible = true;
+    final dialogFuture = showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return PopScope(
+          canPop: false,
+          child: ValueListenableBuilder<DateTime>(
+            valueListenable: _sessionTick,
+            builder: (context, _, child) {
+              final status = _sessionStatus;
+              final isWaiting = status == VotingSessionStatus.waiting;
+              final isEnded = status == VotingSessionStatus.ended;
+              final title = isWaiting
+                  ? 'Voting Belum Dimulai'
+                  : isEnded
+                      ? 'Voting Telah Berakhir'
+                      : 'Jadwal Voting Tidak Tersedia';
+              final message = isWaiting
+                  ? 'Sesi voting akan dimulai dalam:'
+                  : isEnded
+                      ? 'Sesi voting sudah ditutup.'
+                      : 'Waktu mulai atau berakhir belum valid.';
+
+              return AlertDialog(
+                title: Text(title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isWaiting ? Icons.schedule : Icons.lock_clock,
+                      size: 56,
+                      color: isWaiting ? Colors.orange : Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    if (isWaiting) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        _remainingTime,
+                        style: const TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Dimulai: ${_formatScheduleTime(_startsAt!)}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ],
+                ),
+                actions: [
+                  if (isEnded)
+                    Center(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                        ),
+                        onPressed: _returnToVotingCode,
+                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        label: const Text('Kembali ke Kode Voting',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+    _sessionDialogFuture = dialogFuture;
+    dialogFuture.whenComplete(() {
+      _sessionDialogVisible = false;
+      _sessionDialogFuture = null;
+      if (mounted && !_isVotingActive && !_isLeavingToVotingCode) {
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _showSessionDialog());
+      }
+    });
+  }
 
   void showSuccessDialog(int noCandidate) {
     int countdown = 5;
@@ -45,13 +263,13 @@ class _HomePageState extends State<HomePage> {
           builder: (context, setState) {
             dialogSetState = setState;
             return AlertDialog(
-              title: Center(child: Text('Berhasil!')),
+              title: Center(child: Text('Berhasil!', style: const TextStyle(fontWeight: FontWeight.bold))),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Berhasil memilih kandidat $noCandidate'),
+                  Text('Berhasil memilih kandidat $noCandidate', style: const TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 10),
-                  Text('Halaman akan direfresh dalam:'),
+                  Text('Halaman akan direfresh dalam:', style: const TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 10),
                   Text(
                     '$countdown detik',
@@ -121,8 +339,6 @@ class _HomePageState extends State<HomePage> {
                     String correctCode = widget.data['data']['vote_id'];
 
                     if (inputCode == correctCode) {
-                      print(
-                          {'inputCode': inputCode, 'correctCode': correctCode});
                       confirmed = true;
                       Navigator.pop(context);
                     } else {
@@ -162,6 +378,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   void showNisDialog() {
+    if (!_isVotingActive) {
+      _showSessionDialog();
+      return;
+    }
+
     final TextEditingController nisController = TextEditingController();
     bool isLoading = false;
     String? errorText;
@@ -173,6 +394,12 @@ class _HomePageState extends State<HomePage> {
         return StatefulBuilder(
           builder: (context, setState) {
             Future<void> verify() async {
+              if (!_isVotingActive) {
+                Navigator.pop(context);
+                _showSessionDialog();
+                return;
+              }
+
               final nis = nisController.text.trim();
               final validationError = _validateNis(nis);
               if (validationError != null) {
@@ -256,12 +483,11 @@ class _HomePageState extends State<HomePage> {
                                   await showCodeConfirmationDialog();
                               if (!context.mounted) return;
                               if (confirmed) {
-                                Navigator.pop(context);
-                                Navigator.pushReplacementNamed(context, '/code');
+                                _returnToVotingCode();
                               }
                             },
-                      child: Text('Keluar',
-                          style: TextStyle(color: Colors.white)),
+                      child:
+                          Text('Keluar', style: TextStyle(color: Colors.white)),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -282,6 +508,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> showConfirmationDialog(BuildContext context, noCandidate) async {
+    if (!_isVotingActive) {
+      _showSessionDialog();
+      return;
+    }
+
     if (verifiedNis == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Verifikasi NIS terlebih dahulu')),
@@ -310,6 +541,11 @@ class _HomePageState extends State<HomePage> {
                   backgroundColor: Colors.green,
                 ),
                 onPressed: () async {
+                  if (!_isVotingActive) {
+                    Navigator.pop(context);
+                    _showSessionDialog();
+                    return;
+                  }
                   final result = await votePaperService.submitVote(
                     widget.data['data']['vote_id'],
                     widget.data['data'][
@@ -317,7 +553,6 @@ class _HomePageState extends State<HomePage> {
                         ['paslon_id'],
                     verifiedNis,
                   );
-                  print(result);
                   if (!context.mounted) return;
                   if (result) {
                     showSuccessDialog(noCandidate);
@@ -340,12 +575,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!nisDialogShown) {
-      nisDialogShown = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showNisDialog();
-      });
-    }
   }
 
   @override
@@ -358,126 +587,153 @@ class _HomePageState extends State<HomePage> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: Image.asset(
-                'assets/header_rmbg.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            Stack(
-              children: <Widget>[
-                Text(
-                  'SURAT SUARA',
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: Image.asset(
+                    'assets/header_rmbg.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Stack(
+                  children: <Widget>[
+                    Text(
+                      'SURAT SUARA',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        foreground: Paint()
+                          ..style = PaintingStyle.stroke
+                          ..strokeWidth = 6
+                          ..color = const Color.fromARGB(255, 255, 255, 255),
+                      ),
+                    ),
+                    const Text(
+                      'SURAT SUARA',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+                const Text(
+                  'Pemilihan Ketua dan Wakil OSIS',
                   style: TextStyle(
-                    fontSize: 30,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    foreground: Paint()
-                      ..style = PaintingStyle.stroke
-                      ..strokeWidth = 6
-                      ..color = const Color.fromARGB(255, 255, 255, 255),
                   ),
                 ),
                 const Text(
-                  'SURAT SUARA',
+                  'SMA NEGERI 1 ULUJAMI',
                   style: TextStyle(
-                    fontSize: 30,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: Colors.red,
                   ),
                 ),
-              ],
-            ),
-            const Text(
-              'Pemilihan Ketua dan Wakil OSIS',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const Text(
-              'SMA NEGERI 1 ULUJAMI',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
-            Text(
-              'Periode ${widget.data['data']['periode']}',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Column(
-                children: [
-                  Text(
-                    'Klik pada salah satu kandidat :',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.bold),
+                Text(
+                  'Periode ${widget.data['data']['periode']}',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                if (_isVotingActive)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      border: Border.all(color: Colors.red.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Voting berakhir dalam',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          _remainingTime,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            showConfirmationDialog(context, 1);
-                          },
-                          child: kandidatBox(
-                            no: '1',
-                            imagePath:
-                                "${url!}${widget.data['assets']['paslon1']}",
-                            nama1:
-                                '${widget.data['data']['paslon_first']['ketua']['nama']}',
-                            nama2:
-                                '${widget.data['data']['paslon_first']['wakil']['nama']}',
-                          ),
-                        ),
+                      Text(
+                        'Klik pada salah satu kandidat :',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            showConfirmationDialog(context, 2);
-                          },
-                          child: kandidatBox(
-                            no: '2',
-                            imagePath:
-                                "${url!}${widget.data['assets']['paslon2']}",
-                            nama1:
-                                '${widget.data['data']['paslon_second']['ketua']['nama']}',
-                            nama2:
-                                '${widget.data['data']['paslon_second']['wakil']['nama']}',
+                      const SizedBox(height: 10),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: _isVotingActive
+                                  ? () => showConfirmationDialog(context, 1)
+                                  : null,
+                              child: kandidatBox(
+                                no: '1',
+                                imagePath:
+                                    "${url!}${widget.data['assets']['paslon1']}",
+                                nama1:
+                                    '${widget.data['data']['paslon_first']['ketua']['nama']}',
+                                nama2:
+                                    '${widget.data['data']['paslon_first']['wakil']['nama']}',
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            showConfirmationDialog(context, 3);
-                          },
-                          child: kandidatBox(
-                            no: '3',
-                            imagePath:
-                                "${url!}${widget.data['assets']['paslon3']}",
-                            nama1:
-                                '${widget.data['data']['paslon_third']['ketua']['nama']}',
-                            nama2:
-                                '${widget.data['data']['paslon_third']['wakil']['nama']}',
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: InkWell(
+                              onTap: _isVotingActive
+                                  ? () => showConfirmationDialog(context, 2)
+                                  : null,
+                              child: kandidatBox(
+                                no: '2',
+                                imagePath:
+                                    "${url!}${widget.data['assets']['paslon2']}",
+                                nama1:
+                                    '${widget.data['data']['paslon_second']['ketua']['nama']}',
+                                nama2:
+                                    '${widget.data['data']['paslon_second']['wakil']['nama']}',
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: InkWell(
+                              onTap: _isVotingActive
+                                  ? () => showConfirmationDialog(context, 3)
+                                  : null,
+                              child: kandidatBox(
+                                no: '3',
+                                imagePath:
+                                    "${url!}${widget.data['assets']['paslon3']}",
+                                nama1:
+                                    '${widget.data['data']['paslon_third']['ketua']['nama']}',
+                                nama2:
+                                    '${widget.data['data']['paslon_third']['wakil']['nama']}',
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
+                ),
                 const SizedBox(height: 40),
               ],
             ),
@@ -519,8 +775,7 @@ class _HomePageState extends State<HomePage> {
             alignment: Alignment.center,
             child: Text(
               no,
-              style:
-                  TextStyle(fontSize: noSize, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: noSize, fontWeight: FontWeight.bold),
             ),
           ),
           Container(
