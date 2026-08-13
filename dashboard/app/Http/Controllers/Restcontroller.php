@@ -14,8 +14,6 @@ use App\Models\FingerprintModel;
 use App\Events\MatchingFingerprint;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Phpml\Math\Distance\Manhattan;
 
 class Restcontroller extends Controller
 {
@@ -63,10 +61,8 @@ class Restcontroller extends Controller
     }
 
     /**
-     * Verifikasi kelayakan pemilih berdasarkan NIS.
      *
-     * Urutan cek: NIS terdaftar -> bukan kandidat pada votepapper ini ->
-     * belum pernah memilih pada votepapper ini.
+     * 
      */
     public function VerifyNis(Request $request)
     {
@@ -104,18 +100,19 @@ class Restcontroller extends Controller
 
         try {
             $data = DB::transaction(function () use ($validated) {
-                // Kunci baris votepapper agar cek kelayakan & insert bersifat atomik.
                 $votePapper = VotePapper::where('vote_id', $validated['vote_id'])
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                // Validasi ulang di server — jangan percaya klien.
+                if (now()->lt($votePapper->dimulai) || now()->gt($votePapper->berakhir)) {
+                    throw new \DomainException('Voting sedang tidak dibuka');
+                }
+
                 $eligibility = $this->evaluateVoter($votePapper, $validated['nis']);
                 if ($eligibility['decision'] !== 'matched') {
                     throw new \DomainException($eligibility['message']);
                 }
 
-                // Pastikan paslon yang dipilih benar-benar milik votepapper ini.
                 $validPaslonIds = [$votePapper->paslon1, $votePapper->paslon2, $votePapper->paslon3];
                 if (!in_array($validated['paslon_id'], $validPaslonIds, true)) {
                     throw new \DomainException('Kandidat tidak valid untuk surat suara ini');
@@ -142,15 +139,15 @@ class Restcontroller extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'message' => 'Failed to record vote',
-                'error' => $e->getMessage()
-            ], 400);
+            ], 500);
         }
     }
 
     /**
-     * Evaluasi kelayakan seorang NIS terhadap sebuah votepapper.
+     *
      *
      * @return array{decision:string,message:string,status:int,nama:?string}
      */
@@ -196,7 +193,7 @@ class Restcontroller extends Controller
     }
 
     /**
-     * Daftar NIS ketua & wakil dari seluruh paslon pada votepapper ini.
+     *
      *
      * @return array<int,string>
      */
@@ -217,105 +214,4 @@ class Restcontroller extends Controller
             ->all();
     }
 
-    public function FpReceive(Request $request)
-    {
-        $scanB64 = $request->json('template_base64');
-
-        if (!$scanB64) {
-            return response()->json([
-                'message' => 'template_base64 is required'
-            ], 422);
-        }
-
-        broadcast(new Fingerprint($scanB64));
-
-        $manhattan = new Manhattan();
-
-        $scanVector = $this->base64ToVector($scanB64);
-
-        $dbTemplates = FingerprintModel::with('siswa')->get();
-
-        $bestMatch = null;
-        $bestDistance = PHP_FLOAT_MAX;
-
-        foreach ($dbTemplates as $template) {
-
-            if (!$template->template_base64) {
-                continue;
-            }
-
-            $dbVector = $this->base64ToVector(
-                $template->template_base64
-            );
-
-            if (count($scanVector) !== count($dbVector)) {
-                continue;
-            }
-
-            $distance = $manhattan->distance(
-                $scanVector,
-                $dbVector
-            );
-
-            if ($distance < $bestDistance) {
-                $bestDistance = $distance;
-
-                $bestMatch = [
-                    'id_fp' => $template->id,
-                    'distance' => $distance,
-                    'siswa' => $template->siswa,
-                ];
-            }
-        }
-
-        if (!$bestMatch) {
-            return response()->json([
-                'message' => 'No comparable fingerprint found'
-            ], 404);
-        }
-
-        $threshold = 5000;
-
-        $bestMatch['matched'] = $bestDistance <= $threshold;
-
-        $alreadyVoted = VoteCount::where(
-            'id_fp',
-            $bestMatch['id_fp']
-        )->exists();
-
-        if (!$bestMatch['matched']) {
-            $bestMatch['decision'] = 'unmatched';
-        } elseif ($alreadyVoted) {
-            $bestMatch['decision'] = 'already_voted';
-        } else {
-            $bestMatch['decision'] = 'matched';
-        }
-
-        broadcast(new MatchingFingerprint($bestMatch));
-
-        return response()->json([
-            'message' => 'Fingerprint distance completed',
-            'best_match' => $bestMatch,
-        ], 200);
-    }
-
-
-    private function base64ToVector(string $base64): array
-    {
-        if (str_contains($base64, ',')) {
-            $base64 = explode(',', $base64, 2)[1];
-        }
-
-        $binary = base64_decode($base64, true);
-
-        if ($binary === false) {
-            throw new \InvalidArgumentException(
-                'Invalid fingerprint Base64'
-            );
-        }
-
-        return array_values(
-            unpack('C*', $binary)
-        );
-    }
 }

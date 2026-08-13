@@ -13,11 +13,12 @@ class LoginController extends Controller
             return view('login',['title' => 'Login Panitia']);
         }
         $credentials = $request->validate([
-            'email' => 'required',
-            'password' => 'required',
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
         ]);
 
         if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
             return redirect()->intended(route('dashboard'));
         } else {
             return redirect()->back()->withInput()->withErrors(['email' => 'Invalid email or password']);

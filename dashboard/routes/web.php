@@ -6,11 +6,8 @@ use App\Http\Controllers\Dashboard\HomePageController;
 use App\Http\Controllers\Dashboard\PenanggungJawab;
 use App\Http\Controllers\Dashboard\SiswaController;
 use App\Http\Controllers\Dashboard\VotePapperController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\quickcounts;
-use App\Http\Controllers\RegisterController;
-use App\Http\Controllers\Restcontroller;
 use Illuminate\Support\Facades\Route;
 /*
 |--------------------------------------------------------------------------
@@ -31,9 +28,7 @@ route::get('/home', function() {
 route::get('/votecounts', [quickcounts::class, 'index'])->name('votecounts');
 
 route::get('/admin/login',[LoginController::class,'authenticate'])->name('login')->middleware('guest');
-route::post('/admin/login',[LoginController::class,'authenticate'])->name('login')->middleware('guest');
-route::get('/admin/register',[RegisterController::class,'authenticate'])->name('register')->middleware('guest');
-route::post('/admin/register',[RegisterController::class,'authenticate'])->name('register')->middleware('guest');
+route::post('/admin/login',[LoginController::class,'authenticate'])->name('login.submit')->middleware(['guest', 'throttle:login']);
 route::get('/admin/dashboard', [HomePageController::class, 'index'])->name('dashboard')->middleware('auth');
 route::get('/admin/dashboard/kelola/siswa',[SiswaController::class, 'index'])->name('kelola_siswa')->middleware('auth');
 // route::post('/admin/dashboard/kelola/siswa',[SiswaController::class, 'ShowData']);
@@ -52,7 +47,6 @@ route::resource('fingerprint', FingerprintController::class)->middleware('auth')
 
 route::get('/admin/dashboard/berita_acara',[BeritaAcaraController::class, 'index'])->name('berita_acara')->middleware('auth');
 route::post('/admin/dashboard/berita_acara/penanggung_jawab',[PenanggungJawab::class, 'save'])->name('simpan_penanggung_jawab')->middleware('auth');
-route::get('/admin/dashboard/berita_acara/cetak/{id}',[BeritaAcaraController::class, 'cetak'])->name('cetak_berita_acara')->middleware('auth');
+route::post('/admin/dashboard/berita_acara/cetak/{id}',[BeritaAcaraController::class, 'cetak'])->name('cetak_berita_acara')->middleware('auth');
 
-route::get('/logout',[LoginController::class, 'Logout'])->name('logout')->middleware('auth');
-
+route::post('/logout',[LoginController::class, 'Logout'])->name('logout')->middleware('auth');

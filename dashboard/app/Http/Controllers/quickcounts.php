@@ -40,6 +40,10 @@ class quickcounts extends Controller
             ->where('vote_id', $request->query('vote_id'))
             ->firstOrFail();
 
+        if (now()->lt($data->berakhir)) {
+            abort(403, 'Quick count hanya tersedia setelah voting berakhir.');
+        }
+
         $voteMap = $data->votecounts
             ->groupBy('paslon_id')
             ->map(fn($items) => $items->count());

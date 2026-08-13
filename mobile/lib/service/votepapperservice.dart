@@ -15,7 +15,6 @@ class VotePaperService {
       Uri.parse('$url/api/votepapper?vote_id=$voteId'),
       headers: _headers,
     );
-    print(json.decode(response.body));
     if (response.statusCode != 200) {
       return {
         'status': false,
@@ -35,7 +34,6 @@ class VotePaperService {
       headers: _headers,
     );
     var body = json.decode(response.body);
-    print(body);
     return {
       'status': response.statusCode == 200,
       'decision': body['decision'],
@@ -48,7 +46,6 @@ class VotePaperService {
       Uri.parse('$url/api/voting?vote_id=$voteId&paslon_id=$paslonId&nis=$nis'),
       headers: _headers,
     );
-    print(json.decode(response.body));
     if (response.statusCode == 200) {
       return true;
     } else {

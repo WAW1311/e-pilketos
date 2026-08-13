@@ -5,9 +5,11 @@
         <form action="{{ route('tambah_surat_POST') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <center>
+                <label for="periode" class="form-label fw-bold me-2" style="width: 100px;">Periode :</label>
                 <div class="d-flex align-items-center mb-3 w-100" style="max-width: 360px;">
-                    <label for="periode" class="form-label fw-bold me-2" style="width: 100px;">Periode :</label>
-                    <input type="text" class="form-control" id="periode" name="periode" required>
+                    <input type="text" class="form-control" id="periode1" name="periode1" required placeholder="contoh : 2025">
+                    <label for="periode" class="form-label fw-bold me-2" style="width: 100px;">/</label>
+                    <input type="text" class="form-control" id="periode2" name="periode2" required placeholder="contoh : 2026">
                 </div>
             </center>
             <div class="row g-3 mb-5">
@@ -31,7 +33,7 @@
                         </select>
                         <br>
                         <label for="foto1" class="form-label">Foto</label>
-                        <input class="form-control" type="file" name="foto1" id="foto1" required>
+                        <input class="form-control" type="file" name="foto1" id="foto1" accept="image/jpeg,image/png,image/webp" required>
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-xl-4">
@@ -54,7 +56,7 @@
                         </select>
                         <br>
                         <label for="foto2" class="form-label">Foto</label>
-                        <input class="form-control" type="file" name="foto2" id="foto2" required>
+                        <input class="form-control" type="file" name="foto2" id="foto2" accept="image/jpeg,image/png,image/webp" required>
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-xl-4">
@@ -77,7 +79,7 @@
                         </select>
                         <br>
                         <label for="foto3" class="form-label">Foto</label>
-                        <input class="form-control" type="file" name="foto3" id="foto3" required>
+                        <input class="form-control" type="file" name="foto3" id="foto3" accept="image/jpeg,image/png,image/webp" required>
                     </div>
                 </div>
             </div>

@@ -31,7 +31,7 @@
                         </select>
                         <br>
                         <label for="foto1" class="form-label">Foto</label>
-                        <input class="form-control" type="file" name="foto_first" id="foto1">
+                        <input class="form-control" type="file" name="foto_first" id="foto1" accept="image/jpeg,image/png,image/webp">
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-xl-4">
@@ -54,7 +54,7 @@
                         </select>
                         <br>
                         <label for="foto2" class="form-label">Foto</label>
-                        <input class="form-control" type="file" name="foto_second" id="foto2">
+                        <input class="form-control" type="file" name="foto_second" id="foto2" accept="image/jpeg,image/png,image/webp">
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-xl-4">
@@ -77,7 +77,7 @@
                         </select>
                         <br>
                         <label for="foto3" class="form-label">Foto</label>
-                        <input class="form-control" type="file" name="foto_third" id="foto3">
+                        <input class="form-control" type="file" name="foto_third" id="foto3" accept="image/jpeg,image/png,image/webp">
                     </div>
                 </div>
             </div>

@@ -13,47 +13,62 @@ class SiswaController extends Controller
 {
     protected $siswa;
 
-    public function __construct($datasiswa = new SiswaModel()) {
+    public function __construct($datasiswa = new SiswaModel())
+    {
         $this->siswa = $datasiswa;
     }
 
-    public function index() {
+    public function index()
+    {
         $dataSiswa = $this->fetchdata();
-        return view('Siswa.index',['title' => 'Kelola Siswa','dataSiswa' => $dataSiswa]);
+        return view('Siswa.index', ['title' => 'Kelola Siswa', 'dataSiswa' => $dataSiswa]);
     }
-    private function fetchdata($nis = null, $deletedcheck = true) {
-        if($nis != null && $deletedcheck == true) {
-            return $this->siswa->where(['nis' => $nis,'deleted' => false])->first();
-        } else if ($nis != null && $deletedcheck == false){
+    private function fetchdata($nis = null, $deletedcheck = true)
+    {
+        if ($nis != null && $deletedcheck == true) {
+            return $this->siswa->where(['nis' => $nis, 'deleted' => false])->first();
+        } else if ($nis != null && $deletedcheck == false) {
             return $this->siswa->where(['nis' => $nis])->first();
         }
         return $this->siswa->where('deleted', false)->get();
     }
-    public function InsertData(Request $request) {
+    public function InsertData(Request $request)
+    {
         $excel = $request->query('excel');
         if ($request->method() == "GET" && $excel == 'false') {
-            return view('Siswa.insertOne',['title' => 'Kelola Siswa',]);
-        } else if($request->method() == "GET" && $excel == 'true') {
-            return view('Siswa.insertExcel',['title' => 'Kelola Siswa']);
+            return view('Siswa.insertOne', ['title' => 'Kelola Siswa',]);
+        } else if ($request->method() == "GET" && $excel == 'true') {
+            return view('Siswa.insertExcel', ['title' => 'Kelola Siswa']);
         }
-        if($excel == 'true') {
+        if ($excel == 'true') {
             try {
                 $request->validate([
-                    'file' => 'required|mimes:csv,txt,xls,xlsx|mimetypes:text/plain,text/csv,application/vnd.ms-excel'
+                    'file' => [
+                        'required',
+                        'file',
+                        'mimes:csv,xls,xlsx',
+                        'max:2048',
+                    ],
                 ]);
 
                 Excel::import(new ImportSiswa(), $request->file('file'));
                 return redirect()->route('kelola_siswa')->with('success', 'Data siswa berhasil diimport!');
-            } catch(Exception $e) {
+            } catch (Exception $e) {
                 return redirect()->back()->with('error', 'Gagal mengimport data siswa!');
             }
         }
         try {
-            $nis = $request->get('nis');
-            $nama = $request->get('nama');
-            $kelas = $request->get('kelas');
-            $wali_kelas = $request->get('wali_kelas');
-            $isAdded = $this->fetchdata($nis,false);
+            $validated = $request->validate([
+                'nis' => ['required', 'string', 'max:30'],
+                'nama' => ['required', 'string', 'max:255'],
+                'kelas' => ['required', 'string', 'max:100'],
+                'wali_kelas' => ['required', 'string', 'max:255'],
+            ]);
+            $nis = $validated['nis'];
+            $nama = $validated['nama'];
+            $kelas = $validated['kelas'];
+            $wali_kelas = $validated['wali_kelas'];
+            $isAdded = $this->fetchdata($nis, false);
             if (!$isAdded) {
                 $this->siswa->create([
                     'nis' => $nis,
@@ -63,7 +78,7 @@ class SiswaController extends Controller
                     'deleted' => false
                 ]);
                 return redirect()->route('kelola_siswa')->with('success', 'Berhasil menambahkan data siswa!');
-            } else if($isAdded->deleted == true) {
+            } else if ($isAdded->deleted == true) {
                 $this->siswa->where('nis', $nis)->update([
                     'nama' => $nama,
                     'kelas' => $kelas,
@@ -73,43 +88,53 @@ class SiswaController extends Controller
                 return redirect()->route('kelola_siswa')->with('success', 'Berhasil menambahkan data siswa!');
             }
             return redirect()->back()->with('error', 'Data siswa sudah ditambahkan sebelumnya!');
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal menambahkan data siswa!');
         }
     }
 
-    public function UpdateData(Request $request) {
-        if($request->method() == 'GET') {
+    public function UpdateData(Request $request)
+    {
+        if ($request->method() == 'GET') {
             $nis = $request->query('nis');
             $DataSiswa = $this->fetchdata($nis);
-            return view('Siswa.update',['title' => 'Kelola Siswa','siswa' => $DataSiswa]);
+            return view('Siswa.update', ['title' => 'Kelola Siswa', 'siswa' => $DataSiswa]);
         }
-        $nis = $request->get('nis');
-        $nama = $request->get('nama');
-        $kelas = $request->get('kelas');
-        $wali_kelas = $request->get('wali_kelas');
+        $validated = $request->validate([
+            'nis' => ['required', 'string', 'max:30', 'exists:siswa_models,nis'],
+            'nama' => ['required', 'string', 'max:255'],
+            'kelas' => ['required', 'string', 'max:100'],
+            'wali_kelas' => ['required', 'string', 'max:255'],
+        ]);
+        $nis = $validated['nis'];
+        $nama = $validated['nama'];
+        $kelas = $validated['kelas'];
+        $wali_kelas = $validated['wali_kelas'];
         try {
             $this->siswa->update([
                 'nama' => $nama,
                 'kelas' => $kelas,
                 'wali_kelas' => $wali_kelas,
-            ],['nis'=> $nis]);
+            ], ['nis' => $nis]);
             return redirect()->route('kelola_siswa')->with('success', 'berhasil memperbarui data siswa!');
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal Mengupdate data siswa!');
         }
     }
 
-    public function DeleteData(Request $request) {
-        $nis = $request->query('nis');
+    public function DeleteData(Request $request)
+    {
+        $nis = $request->validate([
+            'nis' => ['required', 'string', 'max:30', 'exists:siswa_models,nis'],
+        ])['nis'];
         try {
             $this->siswa->where('nis', $nis)->update([
                 'deleted' => true
             ]);
             return redirect()->back()->with('success', 'Berhasil menghapus data siswa!');
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             dd($e);
-            return redirect()->back()->with('error','gagal menghapus data siswa!');
+            return redirect()->back()->with('error', 'gagal menghapus data siswa!');
         }
     }
 }

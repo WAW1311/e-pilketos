@@ -10,8 +10,12 @@
                 <i data-bs-toggle="dropdown" class="fa-solid fa-circle-user fa-2x text-white"
                     style="cursor: pointer;"></i>
                 <ul class="dropdown-menu dropdown-menu-end mt-2">
-                    <li><a class="dropdown-item fw-bold text-light-emphasis"
-                            href="{{ route('logout') }}">Logout</a></li>
+                    <li>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button class="dropdown-item fw-bold text-light-emphasis" type="submit">Logout</button>
+                        </form>
+                    </li>
                 </ul>
             </div>
         </div>

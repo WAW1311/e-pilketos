@@ -202,6 +202,11 @@ class BeritaAcaraController extends Controller
         })->sortBy('nomor')->values();
         $paslonRank = $paslonList->sortByDesc('vote')->values();
 
+        $now = now()->format('Y-m-d H:i:s');
+        if($data->berakhir > $now) {
+            return redirect()->back()->with('error', 'Berita Acara belum dapat dicetak karena pemilihan belum berakhir!');
+        }
+
         // dd($data);
         return view('BeritaAcara.cetak', [
             'title' => 'Cetak Berita Acara',

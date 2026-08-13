@@ -64,12 +64,13 @@ class VotePapperController extends Controller
             ]);
             $id_paslon[] = $generateid;
         }
+        $periode = $request->get('periode1') . "/" . $request->get('periode2');
         $this->votePapper->create([
             'vote_id' => $this->generateId(),
             'paslon1' => $id_paslon[0],
             'paslon2' => $id_paslon[1],
             'paslon3' => $id_paslon[2],
-            'periode' => $request->get('periode'),
+            'periode' => $periode,
             'dimulai' => $request->get('dimulai'),
             'berakhir' => $request->get('berakhir'),
         ]);
@@ -96,8 +97,7 @@ class VotePapperController extends Controller
             'paslonThird',
         )->find($request->query('id'))->toArray();
         // dd($dataVotePapper);
-        $DateNow = now()->format('Y-m-d H:i:s');
-        if ($dataVotePapper['dimulai'] <= $DateNow) {
+        if (now()->gt($dataVotePapper['dimulai'])) {
             return redirect()->route('kelola_surat')->with('error', 'Tidak dapat mengubah data, Voting sudah dimulai!');
         }
         $key = ['first', 'second', 'third'];
@@ -108,7 +108,7 @@ class VotePapperController extends Controller
             if ($file) {
                 Storage::delete('public/' . $dataVotePapper["paslon_$paslon_index"]['asset']);
                 $uuid = Str::uuid()->toString();
-                $ext = $file->getClientOriginalExtension();
+                $ext = $file->extension();
                 $filename = $uuid . '.' . $ext;
                 $file->storeAs('public', $filename);
             } else {
@@ -130,14 +130,21 @@ class VotePapperController extends Controller
     }
     public function DeleteData(Request $request)
     {
-        $dataVotePapper = $this->votePapper->find($request->query('id'));
-        $datapaslonId = [$dataVotePapper["paslon_first"], $dataVotePapper["paslon_second"], $dataVotePapper["paslon_third"]];
+        $dataVotePapper = $this->votePapper->with('paslonFirst', 'paslonSecond', 'paslonThird')->find($request->query('id'));
+        // $datapaslonId = [$dataVotePapper["paslonFirst"]['paslon_id'], $dataVotePapper["paslonSecond"]['paslon_id'], $dataVotePapper["paslonThird"]['paslon_id']];
+        foreach (['paslonFirst', 'paslonSecond', 'paslonThird'] as $paslonKey) {
+            $paslon = $dataVotePapper->$paslonKey;
+            if ($paslon) {
+                Storage::delete('public/' . $paslon->asset);
+                $this->paslon->where('paslon_id', $paslon->paslon_id)->delete();
+            }
+        }
         // foreach ($datapaslonId as $paslons) {
         //     $paslon = $this->paslon->where('paslon_id', $paslons)->first();
         //     Storage::delete('public/' . $paslon['asset']);
         //     $paslon->where('paslon_id', $paslon['paslon_id'])->delete();
         // }
         $this->votePapper->where('vote_id', $request->query('id'))->delete();
-        return redirect()->route('kelola_surat')->with('success', 'Surat Suara berhasil dihapus!');
+        return redirect()->back()->with('success', 'Surat Suara berhasil dihapus!');
     }
 }
