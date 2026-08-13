@@ -62,7 +62,7 @@
                        class="form-control"
                        id="file"
                        name="file"
-                       accept=".csv"
+                       accept=".csv,.xlsx,.xls"
                        required>
             </div>
 

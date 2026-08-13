@@ -43,12 +43,7 @@ class SiswaController extends Controller
         if ($excel == 'true') {
             try {
                 $request->validate([
-                    'file' => [
-                        'required',
-                        'file',
-                        'mimes:csv,xls,xlsx',
-                        'max:2048',
-                    ],
+                    'file' => 'required|mimes:csv,txt,xls,xlsx|mimetypes:text/plain,text/csv,application/vnd.ms-excel'
                 ]);
 
                 Excel::import(new ImportSiswa(), $request->file('file'));
