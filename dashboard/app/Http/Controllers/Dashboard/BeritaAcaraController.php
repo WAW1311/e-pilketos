@@ -134,7 +134,7 @@ class BeritaAcaraController extends Controller
     {
         $voteCount = VoteCount::where('vote_id', $voteId)->count();
 
-        return $voteCount > $siswaCount ? $voteCount - $siswaCount : 0;
+        return $voteCount > $siswaCount ? $voteCount - $siswaCount : "0";
     }
     function blankVoteCount($siswaCount, $voteId)
     {
@@ -195,15 +195,15 @@ class BeritaAcaraController extends Controller
                 'paslon_id' => $p->paslon_id,
                 'nomor'     => (int) $p->nomor,
                 'asset'     => $p->asset,
-                'ketua'     => $ketua->nama,
-                'wakil'     => $wakil->nama,
+                'ketua'     => ucwords(strtolower($ketua->nama ?? '')),
+                'wakil'     => ucwords(strtolower($wakil->nama ?? '')),
                 'vote'      => (int) ($voteMap[$p->paslon_id] ?? 0),
             ];
         })->sortBy('nomor')->values();
         $paslonRank = $paslonList->sortByDesc('vote')->values();
 
         // dd($data);
-        $html = view('BeritaAcara.cetak', [
+        return view('BeritaAcara.cetak', [
             'title' => 'Cetak Berita Acara',
             'AcademicYear' => explode('/', $data->periode),
             'eydDate' => $this->tanggalIndonesia(Now()->format('Y-m-d')),
@@ -217,17 +217,36 @@ class BeritaAcaraController extends Controller
             'sekretarisKPU' => PenanggungJawab::firstOrNew(['jabatan' => 'sekretaris_kpu']),
             'kepalaSekolah' => PenanggungJawab::firstOrNew(['jabatan' => 'kepala_sekolah']),
             'wakaKesiswaan' => PenanggungJawab::firstOrNew(['jabatan' => 'waka_kesiswaan']),
-        ])->render();
+        ]);
+        // $html = view('BeritaAcara.cetak', [
+        //     'title' => 'Cetak Berita Acara',
+        //     'AcademicYear' => explode('/', $data->periode),
+        //     'eydDate' => $this->tanggalIndonesia(Now()->format('Y-m-d')),
+        //     'siswaCount' => $siswa->count(),
+        //     'paslonList' => $paslonList,
+        //     'invalidVote' => $this->invalidVoteCount($siswa->count(), $data->vote_id),
+        //     'blankVote' => $this->blankVoteCount($siswa->count(), $data->vote_id),
+        //     'paslonRank' => $paslonRank,
+        //     'idDate' => $this->formatTanggalIndonesia(Now()->format('Y-m-d')),
+        //     'ketuaKPU' => PenanggungJawab::firstOrNew(['jabatan' => 'ketua_kpu']),
+        //     'sekretarisKPU' => PenanggungJawab::firstOrNew(['jabatan' => 'sekretaris_kpu']),
+        //     'kepalaSekolah' => PenanggungJawab::firstOrNew(['jabatan' => 'kepala_sekolah']),
+        //     'wakaKesiswaan' => PenanggungJawab::firstOrNew(['jabatan' => 'waka_kesiswaan']),
+        // ])->render();
 
-        try {
-            $html2pdf = new Html2Pdf('L', 'A4', 'en');
-            $html2pdf->writeHTML($html);
+        // try {
+        //     $html2pdf = new Html2Pdf(
+        //         'P',
+        //         'A4',
+        //         'en',
+        //     );
+        //     $html2pdf->writeHTML($html);
 
-            $fileName = 'Berita Acara Pemilihan Ketua dan Wakil Ketua OSIS SMAN 1 ULUJAMI Pada Tanggal ' . now()->format('d-m-Y') . 'Masa Bhakti ' . $data->periode . '.pdf';
-            $html2pdf->output($fileName, 'D');
-        } catch (Exception $e) {
-            echo 'Terjadi kesalahan saat mengonversi HTML ke PDF: ' . $e->getMessage();
-        }
+        //     $fileName = "Berita Acara Pemilihan Ketua dan Wakil Ketua OSIS SMAN 1 ULUJAMI Pada Tanggal " . now()->format('Y-m-d') . " Masa Bhakti $data->periode.pdf";
+        //     $html2pdf->output($fileName, 'I');
+        // } catch (Exception $e) {
+        //     echo 'Terjadi kesalahan saat mengonversi HTML ke PDF: ' . $e->getMessage();
+        // }
         // return redirect()->route('berita_acara')->with('success', 'Berita Acara berhasil dicetak!');
     }
 }

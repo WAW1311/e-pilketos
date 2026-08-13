@@ -25,18 +25,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/voting', [Restcontroller::class, 'SubmitVote']);
 });
 
-Route::get('/foo', function () {
-    $target = realpath('dashboard/storage/app/public');
-    $shortcut = 'storage';
+// Route::get('/foo', function () {
+//     $target = realpath('dashboard/storage/app/public');
+//     $shortcut = 'storage';
 
-    if (file_exists($shortcut)) {
-        return 'Symlink sudah ada.';
-    }
+//     if (file_exists($shortcut)) {
+//         return 'Symlink sudah ada.';
+//     }
 
-    symlink($target, $shortcut);
+//     symlink($target, $shortcut);
 
-    return 'Symlink berhasil dibuat dari ' . $target . ' ke ' . $shortcut;
-});
+//     return 'Symlink berhasil dibuat dari ' . $target . ' ke ' . $shortcut;
+// });
 
-route::post('/fingerprint/store', [Restcontroller::class, 'FpReceive']);
+// route::post('/fingerprint/store', [Restcontroller::class, 'FpReceive']);
 // route::post('/fingerprint/match', [Restcontroller::class, 'FpMatched']);

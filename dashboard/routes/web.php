@@ -52,7 +52,7 @@ route::resource('fingerprint', FingerprintController::class)->middleware('auth')
 
 route::get('/admin/dashboard/berita_acara',[BeritaAcaraController::class, 'index'])->name('berita_acara')->middleware('auth');
 route::post('/admin/dashboard/berita_acara/penanggung_jawab',[PenanggungJawab::class, 'save'])->name('simpan_penanggung_jawab')->middleware('auth');
-route::post('/admin/dashboard/berita_acara/cetak/{id}',[BeritaAcaraController::class, 'cetak'])->name('cetak_berita_acara')->middleware('auth');
+route::get('/admin/dashboard/berita_acara/cetak/{id}',[BeritaAcaraController::class, 'cetak'])->name('cetak_berita_acara')->middleware('auth');
 
 route::get('/logout',[LoginController::class, 'Logout'])->name('logout')->middleware('auth');
 

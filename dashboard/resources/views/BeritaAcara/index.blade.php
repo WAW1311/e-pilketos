@@ -101,12 +101,14 @@
                             <td>{{ $votepapper->dimulai }}</td>
                             <td>{{ $votepapper->berakhir }}</td>
                             <td>
-                                <form action="{{ route('cetak_berita_acara', ['id' => $votepapper->vote_id]) }}"
+                                {{-- <form action="{{ route('cetak_berita_acara', ['id' => $votepapper->vote_id]) }}"
                                     method="POST">
                                     @csrf
                                     <button type="submit" class="btn btn-danger">Cetak
                                         Berita Acara</button>
-                                </form>
+                                </form> --}}
+                                    <a href="{{ route('cetak_berita_acara', ['id' => $votepapper->vote_id]) }}" class="btn btn-danger">Cetak
+                                        Berita Acara</a>
                             </td>
                         </tr>
                     @endforeach
