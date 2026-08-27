@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:evoting_pilketos/service/votepapperservice.dart';
+import 'package:epilketos/service/votepapperservice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -147,7 +147,9 @@ class _HomePageState extends State<HomePage> {
   //  SESSION DIALOG
   // ═══════════════════════════════════════════════════════════════
   void _showSessionDialog() {
-    if (!mounted || _isVotingActive || _sessionDialogVisible ||
+    if (!mounted ||
+        _isVotingActive ||
+        _sessionDialogVisible ||
         _isLeavingToVotingCode) {
       return;
     }
@@ -202,7 +204,8 @@ class _HomePageState extends State<HomePage> {
                             shape: BoxShape.circle,
                             color: iconColor.withValues(alpha: 0.12),
                           ),
-                          child: Icon(iconData, size: _s(36, w), color: iconColor),
+                          child:
+                              Icon(iconData, size: _s(36, w), color: iconColor),
                         ),
                         SizedBox(height: _s(16, w)),
                         Text(title,
@@ -254,8 +257,8 @@ class _HomePageState extends State<HomePage> {
                             child: ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF00B6EE),
-                                padding: EdgeInsets.symmetric(
-                                    vertical: _s(14, w)),
+                                padding:
+                                    EdgeInsets.symmetric(vertical: _s(14, w)),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
                               ),
@@ -340,8 +343,7 @@ class _HomePageState extends State<HomePage> {
                           color: Color(0xFFECFDF5),
                         ),
                         child: Icon(Icons.check_circle_rounded,
-                            size: _s(32, w),
-                            color: const Color(0xFF10B981)),
+                            size: _s(32, w), color: const Color(0xFF10B981)),
                       ),
                       SizedBox(height: _s(14, w)),
                       Text('Berhasil!',
@@ -462,8 +464,7 @@ class _HomePageState extends State<HomePage> {
                       Expanded(
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(
-                                vertical: _s(12, w)),
+                            padding: EdgeInsets.symmetric(vertical: _s(12, w)),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
                             side: const BorderSide(color: Color(0xFFEF4444)),
@@ -481,15 +482,13 @@ class _HomePageState extends State<HomePage> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF00B6EE),
-                            padding: EdgeInsets.symmetric(
-                                vertical: _s(12, w)),
+                            padding: EdgeInsets.symmetric(vertical: _s(12, w)),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () {
                             final inputCode = codeController.text.trim();
-                            final correctCode =
-                                widget.data['data']['vote_id'];
+                            final correctCode = widget.data['data']['vote_id'];
                             if (inputCode == correctCode) {
                               confirmed = true;
                               Navigator.pop(context);
@@ -598,8 +597,7 @@ class _HomePageState extends State<HomePage> {
                             color: Color(0xFFEEF2FF),
                           ),
                           child: Icon(Icons.badge_rounded,
-                              size: _s(32, w),
-                              color: const Color(0xFF3B82F6)),
+                              size: _s(32, w), color: const Color(0xFF3B82F6)),
                         ),
                         SizedBox(height: _s(14, w)),
                         Text('Verifikasi NIS',
@@ -676,8 +674,8 @@ class _HomePageState extends State<HomePage> {
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF00B6EE),
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: _s(12, w)),
+                                  padding:
+                                      EdgeInsets.symmetric(vertical: _s(12, w)),
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12)),
                                 ),
@@ -772,12 +770,10 @@ class _HomePageState extends State<HomePage> {
                     Expanded(
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          padding:
-                              EdgeInsets.symmetric(vertical: _s(12, w)),
+                          padding: EdgeInsets.symmetric(vertical: _s(12, w)),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
-                          side:
-                              const BorderSide(color: Color(0xFFEF4444)),
+                          side: const BorderSide(color: Color(0xFFEF4444)),
                         ),
                         onPressed: () => Navigator.pop(context, false),
                         child: Text('Tidak',
@@ -792,8 +788,7 @@ class _HomePageState extends State<HomePage> {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF10B981),
-                          padding:
-                              EdgeInsets.symmetric(vertical: _s(12, w)),
+                          padding: EdgeInsets.symmetric(vertical: _s(12, w)),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),
@@ -801,7 +796,7 @@ class _HomePageState extends State<HomePage> {
                           final result = await votePaperService.submitVote(
                             widget.data['data']['vote_id'],
                             widget.data['data'][
-                                'paslon_${noCandidate == 1 ? 'first' : noCandidate == 2 ? 'second' : 'third'}']
+                                    'paslon_${noCandidate == 1 ? 'first' : noCandidate == 2 ? 'second' : 'third'}']
                                 ['paslon_id'],
                             verifiedNis,
                           );
@@ -916,7 +911,8 @@ class _HomePageState extends State<HomePage> {
         SafeArea(
           bottom: false,
           child: Padding(
-            padding: EdgeInsets.fromLTRB(_s(16, w), _s(12, w), _s(16, w), _s(16, w)),
+            padding:
+                EdgeInsets.fromLTRB(_s(16, w), _s(12, w), _s(16, w), _s(16, w)),
             child: Column(
               children: [
                 // Top row: tombol Keluar + badge (+ countdown di bawahnya)
@@ -1094,8 +1090,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(
-          horizontal: _s(12, w), vertical: _s(6, w)),
+      padding: EdgeInsets.symmetric(horizontal: _s(12, w), vertical: _s(6, w)),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(20),
@@ -1107,9 +1102,7 @@ class _HomePageState extends State<HomePage> {
           SizedBox(width: _s(4, w)),
           Text(label,
               style: TextStyle(
-                  fontSize: _s(11, w),
-                  fontWeight: FontWeight.w600,
-                  color: fg)),
+                  fontSize: _s(11, w), fontWeight: FontWeight.w600, color: fg)),
         ],
       ),
     );
@@ -1120,8 +1113,7 @@ class _HomePageState extends State<HomePage> {
   // ──────────────────────────────────────────────────────────────
   Widget _headerCountdown(double w) {
     return Container(
-      padding: EdgeInsets.symmetric(
-          horizontal: _s(12, w), vertical: _s(7, w)),
+      padding: EdgeInsets.symmetric(horizontal: _s(12, w), vertical: _s(7, w)),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -1244,7 +1236,9 @@ class _HomePageState extends State<HomePage> {
       borderRadius: BorderRadius.circular(c(16)),
       elevation: 0,
       child: InkWell(
-        onTap: isActive ? () => showConfirmationDialog(context, int.parse(no)) : null,
+        onTap: isActive
+            ? () => showConfirmationDialog(context, int.parse(no))
+            : null,
         borderRadius: BorderRadius.circular(c(16)),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -1258,7 +1252,8 @@ class _HomePageState extends State<HomePage> {
             // Shadow tipis agar card terangkat dari background putih.
             boxShadow: [
               BoxShadow(
-                color: const Color.fromARGB(255, 71, 71, 71).withValues(alpha: 0.4),
+                color: const Color.fromARGB(255, 71, 71, 71)
+                    .withValues(alpha: 0.4),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
@@ -1292,8 +1287,8 @@ class _HomePageState extends State<HomePage> {
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(c(12)),
-                  border: Border.all(
-                      color: const Color(0xFF0175B8), width: 1.2),
+                  border:
+                      Border.all(color: const Color(0xFF0175B8), width: 1.2),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(c(11)),
@@ -1305,8 +1300,7 @@ class _HomePageState extends State<HomePage> {
                       errorBuilder: (_, __, ___) => Container(
                         color: const Color(0xFFF0F4F8),
                         child: Icon(Icons.person_rounded,
-                            size: c(46),
-                            color: Colors.grey.shade400),
+                            size: c(46), color: Colors.grey.shade400),
                       ),
                     ),
                   ),

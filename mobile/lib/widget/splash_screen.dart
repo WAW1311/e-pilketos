@@ -1,4 +1,4 @@
-import 'package:evoting_pilketos/widget/votingcode.dart';
+import 'package:epilketos/widget/votingcode.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -21,9 +21,9 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..forward();
-    _scaleAnim = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
-    _opacityAnim =
-        CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _scaleAnim =
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+    _opacityAnim = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
 
     // Tunggu splash selesai lalu pindah ke halaman kode.
     Future.delayed(const Duration(seconds: 3), () {

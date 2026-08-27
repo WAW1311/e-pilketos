@@ -1,5 +1,5 @@
-import 'package:evoting_pilketos/widget/testing.dart';
-import 'package:evoting_pilketos/widget/votingcode.dart';
+import 'package:epilketos/widget/testing.dart';
+import 'package:epilketos/widget/votingcode.dart';
 import 'package:flutter/material.dart';
 import '../widget/splash_screen.dart';
 import '../widget/homepage.dart';

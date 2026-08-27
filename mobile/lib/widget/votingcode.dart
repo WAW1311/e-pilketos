@@ -1,4 +1,4 @@
-import 'package:evoting_pilketos/service/votepapperservice.dart';
+import 'package:epilketos/service/votepapperservice.dart';
 import 'package:flutter/material.dart';
 
 class VotingCode extends StatefulWidget {
@@ -43,8 +43,7 @@ class _VotingCodeState extends State<VotingCode> {
       return;
     }
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/home',
-        arguments: data['data']);
+    Navigator.pushReplacementNamed(context, '/home', arguments: data['data']);
   }
 
   @override
