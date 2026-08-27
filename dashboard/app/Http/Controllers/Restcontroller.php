@@ -163,15 +163,6 @@ class Restcontroller extends Controller
             ];
         }
 
-        if (in_array($nis, $this->candidateNisForVote($votePapper), true)) {
-            return [
-                'decision' => 'is_candidate',
-                'message' => 'Kandidat tidak diperbolehkan memilih',
-                'status' => 403,
-                'nama' => $siswa->nama,
-            ];
-        }
-
         $alreadyVoted = VoteCount::where('vote_id', $votePapper->vote_id)
             ->where('nis', $nis)
             ->exists();
@@ -190,28 +181,6 @@ class Restcontroller extends Controller
             'status' => 200,
             'nama' => $siswa->nama,
         ];
-    }
-
-    /**
-     *
-     *
-     * @return array<int,string>
-     */
-    private function candidateNisForVote(VotePapper $votePapper): array
-    {
-        $paslonIds = array_filter([
-            $votePapper->paslon1,
-            $votePapper->paslon2,
-            $votePapper->paslon3,
-        ]);
-
-        return Paslon::whereIn('paslon_id', $paslonIds)
-            ->get(['ketua', 'wakil'])
-            ->flatMap(fn ($p) => [$p->ketua, $p->wakil])
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
     }
 
 }

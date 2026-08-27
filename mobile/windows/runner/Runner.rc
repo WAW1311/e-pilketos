@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "evoting_smanja" "\0"
+            VALUE "CompanyName", "com.wawtech" "\0"
+            VALUE "FileDescription", "epilketos" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "evoting_smanja" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "evoting_smanja.exe" "\0"
-            VALUE "ProductName", "evoting_smanja" "\0"
+            VALUE "InternalName", "epilketos" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.wawtech. All rights reserved." "\0"
+            VALUE "OriginalFilename", "epilketos.exe" "\0"
+            VALUE "ProductName", "epilketos" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

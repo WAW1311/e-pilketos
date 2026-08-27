@@ -12,124 +12,227 @@ class _VotingCodeState extends State<VotingCode> {
   final TextEditingController _kodeController = TextEditingController();
   final VotePaperService votePaperService = VotePaperService();
   bool isLoading = false;
-  void findVoterCode(context) async {
-    String kode = _kodeController.text.trim();
+
+  @override
+  void dispose() {
+    _kodeController.dispose();
+    super.dispose();
+  }
+
+  double s(double v, double w) => v * (w / 400).clamp(0.85, 1.6);
+
+  void findVoterCode() async {
+    final kode = _kodeController.text.trim();
     if (kode.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Kode voting tidak boleh kosong')),
       );
       return;
     }
-    setState(() {
-      isLoading = true;
-    });
-    Future.delayed(const Duration(seconds: 2), () async {
-      var data = await votePaperService.getVotePapers(kode);
-      setState(() {
-        isLoading = false;
-      });
-      if (data['status'] == false) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('kode tidak valid, coba lagi')),
-        );
-        return;
-      }
-      Navigator.pushReplacementNamed(context, '/home', arguments: data['data']);
-    });
+    setState(() => isLoading = true);
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    final data = await votePaperService.getVotePapers(kode);
+    if (!mounted) return;
+    setState(() => isLoading = false);
+    if (data['status'] == false) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kode tidak valid, coba lagi')),
+      );
+      return;
+    }
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/home',
+        arguments: data['data']);
   }
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      body: DecoratedBox(
-        decoration: BoxDecoration(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF00B6EE),
-              Color(0xFF0175B8),
-            ],
+            colors: [Color(0xFF00B6EE), Color(0xFF0175B8)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 480),
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: Color.fromRGBO(255, 255, 255, 1),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  blurRadius: 10,
-                  color: Colors.black12,
-                )
-              ],
-            ),
+        child: SafeArea(
+          child: Center(
             child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Silahkan masukkan kode voting',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF00B6EE),
+              padding: EdgeInsets.symmetric(horizontal: s(24, w)),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ---- Logo code-based ----
+                    Container(
+                      width: s(80, w),
+                      height: s(80, w),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.how_to_vote,
+                        size: s(40, w),
+                        color: const Color(0xFF0175B8),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.asset(
-                          'assets/voting_ilustration.jpg',
-                          width: 120,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
+                    SizedBox(height: s(16, w)),
+                    Text(
+                      'E-Voting Pilketos',
+                      style: TextStyle(
+                        fontSize: s(22, w),
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 0.8,
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 10),
-                            TextField(
-                              controller: _kodeController,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(),
-                                labelText: 'Kode Voting',
-                                hintText: 'Code Voting Here',
+                    ),
+                    SizedBox(height: s(4, w)),
+                    Text(
+                      'SMA Negeri 1 Ulujami',
+                      style: TextStyle(
+                        fontSize: s(13, w),
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    SizedBox(height: s(32, w)),
+
+                    // ---- Card form ----
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(s(24, w)),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Masukkan Kode Voting',
+                            style: TextStyle(
+                              fontSize: s(17, w),
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF0175B8),
+                            ),
+                          ),
+                          SizedBox(height: s(6, w)),
+                          Text(
+                            'Kode voting telah diberikan oleh panitia.',
+                            style: TextStyle(
+                              fontSize: s(13, w),
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          SizedBox(height: s(20, w)),
+
+                          // ---- Text field ----
+                          TextField(
+                            controller: _kodeController,
+                            enabled: !isLoading,
+                            style: TextStyle(fontSize: s(15, w)),
+                            decoration: InputDecoration(
+                              labelText: 'Kode Voting',
+                              hintText: 'Masukkan kode di sini',
+                              prefixIcon: const Icon(Icons.vpn_key_outlined,
+                                  color: Color(0xFF0175B8)),
+                              filled: true,
+                              fillColor: const Color(0xFFF0F4F8),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF00B6EE), width: 2),
                               ),
                             ),
-                            const SizedBox(height: 10),
-                            ElevatedButton(
-                              onPressed: () {
-                                findVoterCode(context);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 10),
+                          ),
+                          SizedBox(height: s(20, w)),
+
+                          // ---- Tombol Masuk ----
+                          SizedBox(
+                            width: double.infinity,
+                            height: s(50, w),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF00B6EE),
+                                    Color(0xFF0175B8),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF0175B8)
+                                        .withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                              child: isLoading
-                                  ? const CircularProgressIndicator(
-                                      color: Colors.white,
-                                    )
-                                  : const Text('Masuk',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white)),
+                              child: ElevatedButton.icon(
+                                onPressed:
+                                    isLoading ? null : () => findVoterCode(),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                icon: isLoading
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.login,
+                                        color: Colors.white),
+                                label: Text(
+                                  isLoading ? 'Memverifikasi...' : 'Masuk',
+                                  style: TextStyle(
+                                    fontSize: s(15, w),
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    SizedBox(height: s(24, w)),
+                  ],
+                ),
               ),
             ),
           ),
