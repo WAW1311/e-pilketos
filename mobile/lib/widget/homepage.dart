@@ -134,8 +134,9 @@ class _HomePageState extends State<HomePage> {
     // (mis. "Voting Telah Berakhir") yang muncul di halaman kode voting.
     _isLeavingToVotingCode = true;
     _sessionTimer?.cancel();
-    Navigator.of(context, rootNavigator: true)
-        .pushNamedAndRemoveUntil('/code', (route) => false);
+    Navigator.pop(context);
+    Navigator.of(context)
+        .pushNamed('/code');
   }
 
   void _showSessionDialog() {
@@ -263,13 +264,17 @@ class _HomePageState extends State<HomePage> {
           builder: (context, setState) {
             dialogSetState = setState;
             return AlertDialog(
-              title: Center(child: Text('Berhasil!', style: const TextStyle(fontWeight: FontWeight.bold))),
+              title: Center(
+                  child: Text('Berhasil!',
+                      style: const TextStyle(fontWeight: FontWeight.bold))),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Berhasil memilih kandidat $noCandidate', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text('Berhasil memilih kandidat $noCandidate',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 10),
-                  Text('Halaman akan direfresh dalam:', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text('Halaman akan direfresh dalam:',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 10),
                   Text(
                     '$countdown detik',

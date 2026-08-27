@@ -1,4 +1,4 @@
-package com.example.evoting_smanja
+package com.wawtech.epilketos
 
 import io.flutter.embedding.android.FlutterActivity
 

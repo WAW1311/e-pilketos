@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.evoting_smanja"
+    namespace = "com.wawtech.epilketos"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.evoting_smanja"
+        applicationId = "com.wawtech.epilketos"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
