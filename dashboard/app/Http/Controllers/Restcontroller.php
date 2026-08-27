@@ -8,6 +8,7 @@ use App\Models\VoteCount;
 use App\Models\SiswaModel;
 use App\Models\VotePapper;
 use App\Events\Fingerprint;
+use App\Services\VotingToken;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 use App\Models\FingerprintModel;
@@ -64,7 +65,7 @@ class Restcontroller extends Controller
      *
      * 
      */
-    public function VerifyNis(Request $request)
+    public function VerifyNis(Request $request, VotingToken $votingToken)
     {
         $validated = $request->validate([
             'vote_id' => 'required|string',
@@ -81,26 +82,42 @@ class Restcontroller extends Controller
 
         $result = $this->evaluateVoter($votePapper, $validated['nis']);
 
+        // NIS valid & belum memilih → terbitkan JWT jangka pendek untuk /voting.
+        $token = null;
+        if ($result['decision'] === 'matched') {
+            $token = $votingToken->issue($validated['nis'], $validated['vote_id']);
+        }
+
         return response()->json([
             'message' => $result['message'],
             'decision' => $result['decision'],
             'data' => $result['decision'] === 'matched'
                 ? ['nis' => $validated['nis'], 'nama' => $result['nama']]
                 : null,
+            'token' => $token,
+            'token_type' => $token ? 'Bearer' : null,
+            'expires_in' => $token ? (int) config('voting.jwt_ttl', 900) : null,
         ], $result['status']);
     }
 
     public function SubmitVote(Request $request)
     {
         $validated = $request->validate([
-            'vote_id' => 'required|string',
-            'nis' => 'required|string',
             'paslon_id' => 'required|string',
         ]);
 
+        // Identitas pemilih diambil dari klaim JWT (middleware voting.jwt),
+        // bukan dari input klien, agar tidak bisa dimanipulasi.
+        $nis = (string) $request->attributes->get('voting_nis');
+        $voteId = (string) $request->attributes->get('voting_vote_id');
+
+        if ($nis === '' || $voteId === '') {
+            return response()->json(['message' => 'Token voting tidak valid.'], 401);
+        }
+
         try {
-            $data = DB::transaction(function () use ($validated) {
-                $votePapper = VotePapper::where('vote_id', $validated['vote_id'])
+            $data = DB::transaction(function () use ($validated, $nis, $voteId) {
+                $votePapper = VotePapper::where('vote_id', $voteId)
                     ->lockForUpdate()
                     ->firstOrFail();
 
@@ -108,7 +125,7 @@ class Restcontroller extends Controller
                     throw new \DomainException('Voting sedang tidak dibuka');
                 }
 
-                $eligibility = $this->evaluateVoter($votePapper, $validated['nis']);
+                $eligibility = $this->evaluateVoter($votePapper, $nis);
                 if ($eligibility['decision'] !== 'matched') {
                     throw new \DomainException($eligibility['message']);
                 }
@@ -119,8 +136,8 @@ class Restcontroller extends Controller
                 }
 
                 return $this->votecount->create([
-                    'vote_id' => $validated['vote_id'],
-                    'nis' => $validated['nis'],
+                    'vote_id' => $voteId,
+                    'nis' => $nis,
                     'paslon_id' => $validated['paslon_id'],
                 ]);
             });

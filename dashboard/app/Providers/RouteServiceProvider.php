@@ -45,8 +45,25 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by(strtolower((string) $request->input('email')) . '|' . $request->ip());
         });
 
+        // Limiter umum untuk seluruh grup 'api'. Semua request mobile memakai
+        // token kiosk yang sama, jadi dikunci per-IP (bukan per-user).
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(120)->by($request->ip());
         });
+
+    //     // Ambil data surat suara.
+    //     RateLimiter::for('votepapper', function (Request $request) {
+    //         return Limit::perMinute(60)->by($request->ip());
+    //     });
+
+    //     // Verifikasi NIS — diperketat per-IP untuk memperlambat enumerasi NIS.
+    //     RateLimiter::for('verify', function (Request $request) {
+    //         return Limit::perMinute(40)->by($request->ip());
+    //     });
+
+    //     // Submit suara — dikunci per-IP.
+    //     RateLimiter::for('voting', function (Request $request) {
+    //         return Limit::perMinute(40)->by($request->ip());
+    //     });
     }
 }

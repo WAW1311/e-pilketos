@@ -20,6 +20,7 @@ class _HomePageState extends State<HomePage> {
   final url = dotenv.env['API_URL'];
   bool nisDialogShown = false;
   String? verifiedNis;
+  String? _votingToken;
   late final DateTime? _startsAt;
   late final DateTime? _endsAt;
   late DateTime _now;
@@ -569,6 +570,7 @@ class _HomePageState extends State<HomePage> {
               if (!context.mounted) return;
               if (res['status'] == true && res['decision'] == 'matched') {
                 verifiedNis = nis;
+                _votingToken = res['token'];
                 Navigator.pop(context);
               } else {
                 setState(() {
@@ -798,7 +800,7 @@ class _HomePageState extends State<HomePage> {
                             widget.data['data'][
                                     'paslon_${noCandidate == 1 ? 'first' : noCandidate == 2 ? 'second' : 'third'}']
                                 ['paslon_id'],
-                            verifiedNis,
+                            _votingToken,
                           );
                           if (!context.mounted) return;
                           if (result) {

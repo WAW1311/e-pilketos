@@ -20,7 +20,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/votepapper', [Restcontroller::class, 'Votepapper']);
-    Route::post('/verify', [Restcontroller::class, 'VerifyNis']);
+    // Autentikasi via API_TOKEN (Sanctum kiosk).
+    Route::post('/votepapper', [Restcontroller::class, 'Votepapper'])->middleware('throttle:votepapper');
+    Route::post('/verify', [Restcontroller::class, 'VerifyNis'])->middleware('throttle:verify');
+});
+
+// Autentikasi via JWT voting hasil /verify (bukan API_TOKEN).
+Route::middleware(['voting.jwt', 'throttle:voting'])->group(function () {
     Route::post('/voting', [Restcontroller::class, 'SubmitVote']);
 });

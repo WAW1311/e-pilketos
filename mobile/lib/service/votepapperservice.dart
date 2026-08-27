@@ -38,13 +38,19 @@ class VotePaperService {
       'status': response.statusCode == 200,
       'decision': body['decision'],
       'message': body['message'],
+      // JWT jangka pendek untuk autentikasi /voting (hanya ada saat matched).
+      'token': body['token'],
     };
   }
 
-  Future<bool> submitVote(voteId, paslonId, nis) async {
+  Future<bool> submitVote(voteId, paslonId, votingToken) async {
     var response = await http.post(
-      Uri.parse('$url/api/voting?vote_id=$voteId&paslon_id=$paslonId&nis=$nis'),
-      headers: _headers,
+      Uri.parse('$url/api/voting?paslon_id=$paslonId'),
+      headers: {
+        'Accept': 'application/json',
+        // Autentikasi memakai JWT hasil verifikasi NIS, bukan API_TOKEN.
+        'Authorization': 'Bearer ${votingToken ?? ''}',
+      },
     );
     if (response.statusCode == 200) {
       return true;
