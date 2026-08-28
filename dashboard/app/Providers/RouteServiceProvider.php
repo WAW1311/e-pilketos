@@ -47,9 +47,9 @@ class RouteServiceProvider extends ServiceProvider
 
         // Limiter umum untuk seluruh grup 'api'. Semua request mobile memakai
         // token kiosk yang sama, jadi dikunci per-IP (bukan per-user).
-        // RateLimiter::for('api', function (Request $request) {
-        //     return Limit::perMinute(120)->by($request->ip());
-        // });
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(120)->by($request->ip());
+        });
 
     //     // Ambil data surat suara.
     //     RateLimiter::for('votepapper', function (Request $request) {
