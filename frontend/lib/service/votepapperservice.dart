@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+// import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class VotePaperService {
-  var url = dotenv.env['API_URL'];
+  var url = "https://epilketos.wawtech.id";
+  // var url = dotenv.env['API_URL'];
 
   Map<String, String> get _headers => {
         'Accept': 'application/json',
-        'Authorization': 'Bearer ${dotenv.env['API_TOKEN'] ?? ''}',
+        'Authorization': 'Bearer G0m0ak4s2REEIK60wNPhyw71PpIDQAU8UPpNVTbC23ce8326',
+        // 'Authorization': 'Bearer ${dotenv.env['API_TOKEN'] ?? ''}',
       };
 
   Future<Map> getVotePapers(voteId) async {

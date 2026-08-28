@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:epilketos/service/votepapperservice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+// import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 enum VotingSessionStatus { waiting, active, ended, unavailable }
 
@@ -17,7 +17,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final VotePaperService votePaperService = VotePaperService();
-  final url = dotenv.env['API_URL'];
+  final url = "https://epilketos.wawtech.id";
+  // final url = dotenv.env['API_URL'];
   bool nisDialogShown = false;
   String? verifiedNis;
   String? _votingToken;
