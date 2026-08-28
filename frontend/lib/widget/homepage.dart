@@ -304,6 +304,9 @@ class _HomePageState extends State<HomePage> {
     late StateSetter dialogSetState;
 
     Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (countdown == 3) {
+          _votingToken = null;
+      }
       if (countdown == 1) {
         timer.cancel();
         if (context.mounted) {
